@@ -13,17 +13,10 @@ import androidx.navigation.compose.rememberNavController
 
 
 @Composable
-fun TimeTrackerApp() {
+fun TimeTrackerApp(appContainer: AppContainer) {
     TimeTrackerTheme {
         val appState = rememberTimeTrackerAppState()
-//        Surface(
-//            modifier = Modifier.fillMaxSize(),
-//            color = MaterialTheme.colorScheme.background
-//        ) {
-//            Greeting("Android")
-//        }
-        TimeTrackerScaffold(appState)
-
+        TimeTrackerScaffold(appState, appContainer)
     }
 
 

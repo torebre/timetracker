@@ -17,4 +17,8 @@ interface ProjectDao {
     @Query("SELECT * FROM project")
     fun getProjects(): List<Project>
 
+    @Transaction
+    @Query("SELECT * FROM project WHERE project.projectId = :projectId")
+    fun getTasksForProject(projectId: Long): List<ProjectWithTaskEntries>
+
 }

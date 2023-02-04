@@ -9,14 +9,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.kjipo.timetracker.tasklist.TaskList
+import com.kjipo.timetracker.tasklist.TaskListModel
+import com.kjipo.timetracker.tasklist.TaskListUiState
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimeTrackerScaffold(appState: TimeTrackerAppState) {
+fun TimeTrackerScaffold(appState: TimeTrackerAppState,
+appContainer: AppContainer) {
 
     Scaffold(
         bottomBar = {
@@ -30,9 +35,12 @@ fun TimeTrackerScaffold(appState: TimeTrackerAppState) {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screens.TASKS.name) {
+               val taskListModel: TaskListModel = viewModel(factory = TaskListModel.provideFactory(
+                   appContainer.taskRepository
+               ))
 
-                // TODO
-                Text("Tasks")
+                TaskList(taskListModel)
+
             }
 
             composable(Screens.REPORTS.name) {

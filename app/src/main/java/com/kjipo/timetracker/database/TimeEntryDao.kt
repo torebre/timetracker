@@ -14,8 +14,5 @@ interface TimeEntryDao {
     @Delete
     fun deleteTimeEntry(timeEntry: TimeEntry)
 
-    @Transaction
-    @Query("SELECT * FROM project WHERE project.projectId = :projectId")
-    fun getTimeEntriesForProject(projectId: Long): List<ProjectWithTimeEntries>
 
 }
