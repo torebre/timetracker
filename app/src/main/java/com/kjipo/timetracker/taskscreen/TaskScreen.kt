@@ -8,13 +8,18 @@ import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.kjipo.timetracker.database.TimeEntry
+import com.kjipo.timetracker.taskscreen.TaskScreenModel
 import com.kjipo.timetracker.taskscreen.TaskScreenUiState
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 
 class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
@@ -22,8 +27,26 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
     override val values = sequenceOf(
         TaskScreenInput(
             TaskScreenUiState(
+                1,
                 "Task name",
-                true
+                listOf(
+                    TimeEntry(
+                        1, 1, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                            ZoneOffset.UTC
+                        ),
+                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                            ZoneOffset.UTC
+                        )
+                    ),
+                    TimeEntry(
+                        2, 1, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                            ZoneOffset.UTC
+                        ),
+                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                            ZoneOffset.UTC
+                        )
+                    )
+                )
             ),
             {
                 // Do nothing
@@ -40,6 +63,15 @@ class TaskScreenInput(
     val saveData: () -> Unit
 ) {
     // Do nothing
+
+}
+
+
+@Composable
+fun TaskScreen(taskScreenModel: TaskScreenModel, saveTask: () -> Unit) {
+    val uiState = taskScreenModel.uiState.collectAsState()
+
+    TaskScreen(TaskScreenInput(uiState.value, saveTask))
 
 }
 

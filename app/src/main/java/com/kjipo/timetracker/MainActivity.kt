@@ -10,6 +10,7 @@ import com.kjipo.timetracker.database.Task
 import com.kjipo.timetracker.database.TimeEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -17,6 +18,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val appContainer = AppContainerImpl(applicationContext)
+
+
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
         // TODO Only here while developing
         lifecycleScope.launch(Dispatchers.IO) {

@@ -20,7 +20,7 @@ interface TaskDao {
 
     @Transaction
     @Query("SELECT * FROM task WHERE task.taskId = :taskId")
-    fun getTimeEntriesForTask(taskId: Long): List<TaskWithTimeEntries>
+    fun getTimeEntriesForTask(taskId: Long): TaskWithTimeEntries?
 
 
 }
