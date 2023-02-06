@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 
 class TaskScreenModel(val taskId: Long, taskRepository: TaskRepository) : ViewModel() {
@@ -25,6 +26,9 @@ class TaskScreenModel(val taskId: Long, taskRepository: TaskRepository) : ViewMo
     init {
         viewModelScope.launch(Dispatchers.IO) {
                 taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
+
+                    Timber.tag("Task").i("Number of time entries: ${taskWithTimeEntries.timeEntries.size}")
+
                     viewModelState.update {
                         TaskScreenUiState(
                             taskWithTimeEntries.task.taskId,

@@ -14,5 +14,12 @@ interface TimeEntryDao {
     @Delete
     fun deleteTimeEntry(timeEntry: TimeEntry)
 
+    @Query("SELECT * FROM timeEntry WHERE timeEntryId = :timeEntryId")
+    fun getTimeEntry(timeEntryId: Long): TimeEntry?
+
+    @Query("SELECT * FROM timeEntry WHERE taskId = :taskId")
+    fun getTimeEntriesForTask(taskId: Long): List<TimeEntry>
+
+
 
 }

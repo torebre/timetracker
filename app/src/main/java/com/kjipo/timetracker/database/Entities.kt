@@ -53,8 +53,7 @@ data class TaskWithTimeEntries(
     @Embedded val task: Task,
     @Relation(
         parentColumn = "taskId",
-        entityColumn = "timeEntryId",
-        associateBy = Junction(TimeEntryTaskCrossRef::class)
+        entityColumn = "taskId",
     )
     val timeEntries: List<TimeEntry>
 )

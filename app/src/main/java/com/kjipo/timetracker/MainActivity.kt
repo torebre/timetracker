@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
         val timeEntry = TimeEntry(
             0, task.taskId, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
                 ZoneOffset.UTC
+            ),
+            LocalDateTime.of(2023, 1, 6, 12, 0, 5).toInstant(
+                ZoneOffset.UTC
             )
         ).also {
             addTimeEntry(it, appDatabase)
@@ -66,6 +69,11 @@ class MainActivity : ComponentActivity() {
         ).also {
             addTimeEntry(it, appDatabase)
         }
+
+
+        val tasksWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries()
+
+        Timber.tag("Task").i("Tasks with time entries: ${tasksWithTimeEntries.size}")
 
     }
 

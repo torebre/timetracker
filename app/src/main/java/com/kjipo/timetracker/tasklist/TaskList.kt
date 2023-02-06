@@ -1,70 +1,156 @@
 package com.kjipo.timetracker.tasklist
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kjipo.timetracker.database.Task
-import timber.log.Timber
+import com.kjipo.timetracker.toHoursPartHelper
+import com.kjipo.timetracker.toMinutesPartHelper
+import com.kjipo.timetracker.toSecondsPartHelper
+import com.kjipo.timetracker.toTwoDigits
+import java.time.Duration
 
 
-class TaskListInputParameters(val taskListUiState: TaskListUiState, val navigateToTaskScreen: (Long) -> Unit)
+class TaskListInputParameters(
+    val taskListUiState: TaskListUiState,
+    val navigateToTaskScreen: (Long) -> Unit,
+    val toggleStartStop: (Long) -> Unit
+)
 
 class TaskListParameterInputProvider : PreviewParameterProvider<TaskListInputParameters> {
-    override val values = sequenceOf(TaskListInputParameters(TaskListUiState()) {
-        // Do nothing
-    })
+    override val values = sequenceOf(
+        TaskListInputParameters(TaskListUiState(getPreviewTasks()), {
+            // Do nothing
+        },
+            {
+                // Do nothing
+            })
+    )
 
 }
 
+
+private fun getPreviewTasks(): List<TaskUi> {
+    return (1L until 20).map { id ->
+        TaskUi(id, "Task $id", Duration.ofMinutes(10), id.mod(2) == 0)
+    }
+}
+
+
 @Composable
-fun TaskList(taskListModel: TaskListModel, navigateToTaskScreen: (Long) -> Unit) {
+fun TaskList(
+    taskListModel: TaskListModel,
+    navigateToTaskScreen: (Long) -> Unit,
+    toggleStartStop: (Long) -> Unit
+) {
     val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
 
-    TaskList(TaskListInputParameters(uiState.value, navigateToTaskScreen))
-
+    TaskList(TaskListInputParameters(uiState.value, navigateToTaskScreen, toggleStartStop))
 }
 
 
+@Preview(showBackground = true)
 @Composable
 fun TaskList(@PreviewParameter(TaskListParameterInputProvider::class) taskListInputParameters: TaskListInputParameters) {
-    LazyColumn {
+    LazyColumn(modifier = Modifier.fillMaxWidth()) {
         for (task in taskListInputParameters.taskListUiState.tasks) {
             item {
-                TaskRow(TaskRowInput(task, taskListInputParameters.navigateToTaskScreen))
+                TaskRow(
+                    TaskRowInput(
+                        task,
+                        taskListInputParameters.navigateToTaskScreen,
+                        taskListInputParameters.toggleStartStop
+                    )
+                )
             }
         }
     }
-
 }
 
 
-class TaskRowInput(val task: Task, val navigateToTaskScreen: (Long) -> Unit)
+class TaskRowInput(
+    val task: TaskUi,
+    val navigateToTaskScreen: (Long) -> Unit,
+    val toggleStartStop: (Long) -> Unit
+)
 
 class TaskRowParameterProvider : PreviewParameterProvider<TaskRowInput> {
 
-    override val values = sequenceOf(TaskRowInput(Task(1, "Task 1")) {
-        // Do nothing
-    })
+    override val values = sequenceOf(
+        TaskRowInput(TaskUi(1, "Task 1", Duration.ofMinutes(10), false), {
+            // Do nothing
+        },
+            {
+                // Do nothing
+            })
+    )
 
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun TaskRow(@PreviewParameter(TaskRowParameterProvider::class) taskRowInput: TaskRowInput) {
-    Text(
-        modifier = Modifier.clickable {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            modifier = Modifier
+                .clickable {
+                    taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
+                }
+                .width(120.dp)
+                .padding(start = 5.dp),
+            text = taskRowInput.task.title
+        )
 
-            Timber.tag("Tasklist").i("Task title: ${taskRowInput.task.title}. Task ID: ${taskRowInput.task.taskId}")
+        val durationText = with(taskRowInput.task.duration) {
+            "${toTwoDigits(toHoursPartHelper())}:${toTwoDigits(toMinutesPartHelper())}:${
+                toTwoDigits(
+                    toSecondsPartHelper()
+                )
+            }"
+        }
 
-            taskRowInput.navigateToTaskScreen(taskRowInput.task.taskId)
-        },
-        text = taskRowInput.task.title
-    )
+        Text(
+            text = durationText
+        )
+
+        // This is to push the buttons to the end of the row
+        Spacer(Modifier.weight(1f))
+
+        IconButton(modifier = Modifier.padding(end=5.dp),
+            onClick = {
+            taskRowInput.toggleStartStop(taskRowInput.task.id)
+        }) {
+            if (taskRowInput.task.ongoing) {
+                // TODO Use better icon
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Stop"
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Start"
+                )
+            }
+        }
+    }
 
 }

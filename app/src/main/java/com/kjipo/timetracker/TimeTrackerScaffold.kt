@@ -14,14 +14,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
+import com.kjipo.timetracker.taskscreen.TaskScreen
 import com.kjipo.timetracker.taskscreen.TaskScreenModel
 import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimeTrackerScaffold(appState: TimeTrackerAppState,
-appContainer: AppContainer) {
+fun TimeTrackerScaffold(
+    appState: TimeTrackerAppState,
+    appContainer: AppContainer
+) {
 
     Scaffold(
         bottomBar = {
@@ -35,17 +38,19 @@ appContainer: AppContainer) {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screens.TASKS.name) {
-               val taskListModel: TaskListModel = viewModel(factory = TaskListModel.provideFactory(
-                   appContainer.taskRepository
-               ))
+                val taskListModel: TaskListModel = viewModel(
+                    factory = TaskListModel.provideFactory(
+                        appContainer.taskRepository
+                    )
+                )
 
-                TaskList(taskListModel) { taskId ->
-
-                    Timber.tag("Navigation").i("Called to go to task with ID: $taskId")
-
+                TaskList(taskListModel, { taskId ->
                     appState.navigateToScreen("${Screens.TASK.name}/$taskId")
-                }
-
+                },
+                    { taskId ->
+                        taskListModel.toggleStartStop(taskId)
+                    }
+                )
             }
 
             composable(Screens.REPORTS.name) {
@@ -56,14 +61,18 @@ appContainer: AppContainer) {
             }
 
             composable("${Screens.TASK.name}/{taskId}",
-            arguments = listOf(navArgument("taskId") {
-                type = NavType.LongType
-            })) { navBackStackEntry ->
+                arguments = listOf(navArgument("taskId") {
+                    type = NavType.LongType
+                })
+            ) { navBackStackEntry ->
 
-                Timber.tag("Navigation").i("Navigation to task screen: ${navBackStackEntry.arguments?.getLong("taskId")}")
+                Timber.tag("Navigation")
+                    .i("Navigation to task screen: ${navBackStackEntry.arguments?.getLong("taskId")}")
 
                 navBackStackEntry.arguments?.getLong("taskId")?.let { taskId ->
-                    val taskScreenModel = TaskScreenModel(taskId, appContainer.taskRepository)
+                    val taskScreenModel: TaskScreenModel = viewModel(factory = TaskScreenModel.provideFactory(
+                        taskId,
+                        appContainer.taskRepository))
 
                     Timber.tag("Navigation").i("Navigating to task: $taskId")
 
