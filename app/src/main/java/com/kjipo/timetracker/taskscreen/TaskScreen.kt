@@ -1,10 +1,11 @@
 package com.kjipo.timetracker.taskscreen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Icon
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -50,6 +51,9 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
             ),
             {
                 // Do nothing
+            },
+            {
+                // Do nothing
             }
         )
     )
@@ -60,7 +64,8 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 
 class TaskScreenInput(
     val taskScreenUiState: TaskScreenUiState,
-    val saveData: () -> Unit
+    val saveData: () -> Unit,
+    val navigateToTimeEditScreen: (Long) -> Unit
 ) {
     // Do nothing
 
@@ -68,11 +73,12 @@ class TaskScreenInput(
 
 
 @Composable
-fun TaskScreen(taskScreenModel: TaskScreenModel, saveTask: () -> Unit) {
+fun TaskScreen(taskScreenModel: TaskScreenModel,
+               saveTask: () -> Unit,
+               navigateToTimeEditScreen: (Long) -> Unit) {
     val uiState = taskScreenModel.uiState.collectAsState()
 
-    TaskScreen(TaskScreenInput(uiState.value, saveTask))
-
+    TaskScreen(TaskScreenInput(uiState.value, saveTask, navigateToTimeEditScreen))
 }
 
 
@@ -82,7 +88,6 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
     val inputText = remember {
         mutableStateOf(taskScreenInput.taskScreenUiState.taskName)
     }
-
 
     Column {
         Row {
@@ -96,7 +101,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         for (timeEntry in taskScreenInput.taskScreenUiState.timeEntries) {
             LazyRow {
                 item {
-                    TimeEntryRow(timeEntry)
+                    TimeEntryRow(timeEntry, taskScreenInput.navigateToTimeEditScreen)
                 }
             }
         }
@@ -119,19 +124,33 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
 
 
 @Composable
-fun TimeEntryRow(timeEntry: TimeEntry) {
+fun TimeEntryRow(timeEntry: TimeEntry, navigateToTimeEditScreen: (Long) -> Unit) {
     Column(modifier = Modifier.padding(start = 5.dp, top = 5.dp)) {
-        timeEntry.start.let {
-            val date = dateFormatter.format(it.atZone(ZoneId.systemDefault()))
-            val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
-            Text("Start: $date $time")
+        Row {
+            timeEntry.start.let {
+                val date = dateFormatter.format(it.atZone(ZoneId.systemDefault()))
+                val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
+                Text("Start: $date $time")
+            }
+
+            timeEntry.stop?.let {
+                val date = dateFormatter.format(it.atZone(ZoneId.systemDefault()))
+                val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
+                Text("Stop: $date $time")
+            }
         }
 
-        timeEntry.stop?.let {
-            val date = dateFormatter.format(it.atZone(ZoneId.systemDefault()))
-            val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
-            Text("Stop: $date $time")
-        }
+        Spacer(Modifier.weight(1f))
 
+        IconButton(modifier = Modifier.padding(end = 5.dp),
+            onClick = {
+                navigateToTimeEditScreen(timeEntry.timeEntryId)
+            }) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit time entry"
+            )
+        }
     }
+
 }

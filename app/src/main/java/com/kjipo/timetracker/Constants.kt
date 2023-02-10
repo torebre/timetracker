@@ -5,5 +5,6 @@ package com.kjipo.timetracker
 enum class Screens {
     TASKS,
     REPORTS,
-    TASK
+    TASK,
+    TIME_ENTRY_EDIT
 }

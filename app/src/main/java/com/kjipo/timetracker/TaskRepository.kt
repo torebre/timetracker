@@ -19,6 +19,8 @@ interface TaskRepository {
 
     suspend fun setStopForTimeEntry(timeEntryId: Long, stop: Instant)
 
+    suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
+
 }
 
 
@@ -48,6 +50,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         appDatabase.timeEntryDao().getTimeEntry(timeEntryId)?.let { timeEntry ->
             appDatabase.timeEntryDao().updateTimeEntry(timeEntry.copy(stop = stop))
         }
+    }
+
+    override suspend fun getTimeEntry(timeEntryId: Long): TimeEntry? {
+        return appDatabase.timeEntryDao().getTimeEntry(timeEntryId)
     }
 
 

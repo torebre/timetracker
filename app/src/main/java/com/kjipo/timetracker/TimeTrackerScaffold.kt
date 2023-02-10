@@ -6,16 +6,21 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
 import com.kjipo.timetracker.taskscreen.TaskScreen
 import com.kjipo.timetracker.taskscreen.TaskScreenModel
+import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 
@@ -60,33 +65,72 @@ fun TimeTrackerScaffold(
 
             }
 
-            composable("${Screens.TASK.name}/{taskId}",
+            composable(
+                "${Screens.TASK.name}/{taskId}",
                 arguments = listOf(navArgument("taskId") {
                     type = NavType.LongType
                 })
             ) { navBackStackEntry ->
 
-                Timber.tag("Navigation")
-                    .i("Navigation to task screen: ${navBackStackEntry.arguments?.getLong("taskId")}")
-
                 navBackStackEntry.arguments?.getLong("taskId")?.let { taskId ->
-                    val taskScreenModel: TaskScreenModel = viewModel(factory = TaskScreenModel.provideFactory(
-                        taskId,
-                        appContainer.taskRepository))
-
-                    Timber.tag("Navigation").i("Navigating to task: $taskId")
+                    val taskScreenModel: TaskScreenModel = viewModel(
+                        factory = TaskScreenModel.provideFactory(
+                            taskId,
+                            appContainer.taskRepository
+                        )
+                    )
 
                     TaskScreen(taskScreenModel, {
 
                         // TODO Implement save functionality
 
-                    })
+                    },
+                        { timeEntryId ->
+                            appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
+                        })
+                }
+            }
+
+            composable(
+                "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
+                arguments = listOf(navArgument("timeEntryId") {
+                    type = NavType.LongType
+                })
+            ) { navBackStackEntry ->
+
+                val coroutineScope = rememberCoroutineScope()
+
+                navBackStackEntry.arguments?.getLong("timeEntryId")?.let { timeEntryId ->
+                    val uiState by produceState(initialValue = TimeEntryEditUiState(waiting = true)) {
+
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
+                            value = TimeEntryEditUiState(timeEntry = timeEntry)
+                        }
+
+                    }
+
+                    when {
+                        uiState.waiting -> {
+                            TimeEntryScreen(waiting = true)
+                        }
+                        else -> {
+                            TimeEntryScreen(waiting = false)
+                        }
+
+                    }
+
                 }
             }
         }
     }
 
 }
+
+private data class TimeEntryEditUiState(
+    val waiting: Boolean = false,
+    val timeEntry: TimeEntry? = null
+)
 
 
 @Composable
