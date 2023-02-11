@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -73,9 +74,11 @@ class TaskScreenInput(
 
 
 @Composable
-fun TaskScreen(taskScreenModel: TaskScreenModel,
-               saveTask: () -> Unit,
-               navigateToTimeEditScreen: (Long) -> Unit) {
+fun TaskScreen(
+    taskScreenModel: TaskScreenModel,
+    saveTask: () -> Unit,
+    navigateToTimeEditScreen: (Long) -> Unit
+) {
     val uiState = taskScreenModel.uiState.collectAsState()
 
     TaskScreen(TaskScreenInput(uiState.value, saveTask, navigateToTimeEditScreen))
@@ -126,7 +129,8 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
 @Composable
 fun TimeEntryRow(timeEntry: TimeEntry, navigateToTimeEditScreen: (Long) -> Unit) {
     Column(modifier = Modifier.padding(start = 5.dp, top = 5.dp)) {
-        Row {
+        Row(modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically) {
             timeEntry.start.let {
                 val date = dateFormatter.format(it.atZone(ZoneId.systemDefault()))
                 val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
@@ -138,18 +142,18 @@ fun TimeEntryRow(timeEntry: TimeEntry, navigateToTimeEditScreen: (Long) -> Unit)
                 val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
                 Text("Stop: $date $time")
             }
-        }
 
-        Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
 
-        IconButton(modifier = Modifier.padding(end = 5.dp),
-            onClick = {
-                navigateToTimeEditScreen(timeEntry.timeEntryId)
-            }) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = "Edit time entry"
-            )
+            IconButton(modifier = Modifier.padding(end = 5.dp),
+                onClick = {
+                    navigateToTimeEditScreen(timeEntry.timeEntryId)
+                }) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit time entry"
+                )
+            }
         }
     }
 

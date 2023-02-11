@@ -8,20 +8,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
 import com.kjipo.timetracker.taskscreen.TaskScreen
 import com.kjipo.timetracker.taskscreen.TaskScreenModel
+import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +95,6 @@ fun TimeTrackerScaffold(
                     type = NavType.LongType
                 })
             ) { navBackStackEntry ->
-
                 val coroutineScope = rememberCoroutineScope()
 
                 navBackStackEntry.arguments?.getLong("timeEntryId")?.let { timeEntryId ->
@@ -107,30 +104,15 @@ fun TimeTrackerScaffold(
                             val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
                             value = TimeEntryEditUiState(timeEntry = timeEntry)
                         }
-
                     }
 
-                    when {
-                        uiState.waiting -> {
-                            TimeEntryScreen(waiting = true)
-                        }
-                        else -> {
-                            TimeEntryScreen(waiting = false)
-                        }
-
-                    }
-
+                    TimeEntryScreen(uiState)
                 }
             }
         }
     }
 
 }
-
-private data class TimeEntryEditUiState(
-    val waiting: Boolean = false,
-    val timeEntry: TimeEntry? = null
-)
 
 
 @Composable
