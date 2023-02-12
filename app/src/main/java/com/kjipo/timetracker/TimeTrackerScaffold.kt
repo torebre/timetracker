@@ -106,7 +106,9 @@ fun TimeTrackerScaffold(
                         }
                     }
 
-                    TimeEntryScreen(uiState)
+                    TimeEntryScreen(uiState, {
+
+                    })
                 }
             }
         }

@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
-import androidx.compose.runtime.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.viewinterop.AndroidView
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
@@ -22,10 +25,14 @@ import com.kjipo.timetracker.timeFormatter
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 
 @Composable
-fun TimeEntryScreen(uiState: TimeEntryEditUiState) {
+fun TimeEntryScreen(
+    uiState: TimeEntryEditUiState,
+    updateEntry: (TimeEntry) -> Unit
+) {
     val screenShowing = remember {
         mutableStateOf(TimeEntryShowing.OVERVIEW)
     }
@@ -36,7 +43,7 @@ fun TimeEntryScreen(uiState: TimeEntryEditUiState) {
 
         }
         uiState.timeEntry != null -> {
-            TimeEntryInternal(uiState.timeEntry, screenShowing)
+            TimeEntryInternal(TimeEntryInternalParameters(uiState.timeEntry, screenShowing, updateEntry))
         }
         else -> {
             // TODO
@@ -57,35 +64,74 @@ private enum class TimeEntryShowing {
     DATE_PICKER_STOP
 }
 
+private class TimeEntryInternalParameterProvider: PreviewParameterProvider<TimeEntryInternalParameters> {
+
+    override val values = sequenceOf(TimeEntryInternalParameters(
+        TimeEntry(1, 1,
+            LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC),
+                LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC)),
+        mutableStateOf(TimeEntryShowing.OVERVIEW), {
+            // Do nothing
+        }
+    ))
+}
+
+
+private class TimeEntryInternalParameters(
+    val timeEntry: TimeEntry,
+    val screenShowing: MutableState<TimeEntryShowing>,
+    val updateEntry: (TimeEntry) -> Unit
+)
+
+@Preview(showBackground = true)
 @Composable
 private fun TimeEntryInternal(
-    timeEntry: TimeEntry,
-    screenShowing: MutableState<TimeEntryShowing>
+   @PreviewParameter(TimeEntryInternalParameterProvider::class) timeEntryInternalParameters: TimeEntryInternalParameters
 ) {
-    val context = LocalContext.current
     val startTimeState = remember {
-        mutableStateOf(timeEntry.start)
+        mutableStateOf(timeEntryInternalParameters.timeEntry.start)
+    }
+    val stopTimeState = remember {
+        mutableStateOf(timeEntryInternalParameters.timeEntry.stop ?: Instant.now())
     }
 
     Column {
-        when (screenShowing.value) {
+        when (timeEntryInternalParameters.screenShowing.value) {
             TimeEntryShowing.OVERVIEW -> {
-                ShowOverview(timeEntry, context, screenShowing)
+                ShowOverview(timeEntryInternalParameters.timeEntry, timeEntryInternalParameters.screenShowing)
             }
             TimeEntryShowing.TIME_PICKER_START -> {
-                EditTime(startTimeState, context, screenShowing)
+                EditTime(startTimeState, timeEntryInternalParameters.screenShowing)
             }
             TimeEntryShowing.DATE_PICKER_START -> {
-                EditDate(startTimeState, context, screenShowing)
+                EditDate(startTimeState, timeEntryInternalParameters.screenShowing)
             }
             TimeEntryShowing.TIME_PICKER_STOP -> {
-                // TODO
+                EditTime(stopTimeState, timeEntryInternalParameters.screenShowing)
             }
             TimeEntryShowing.DATE_PICKER_STOP -> {
-                // TODO
+                EditDate(stopTimeState, timeEntryInternalParameters.screenShowing)
             }
-
         }
+
+        TextButton(
+            onClick = {
+                timeEntryInternalParameters.updateEntry(
+                    timeEntryInternalParameters.timeEntry.copy(
+                        start = startTimeState.value,
+                        stop = stopTimeState.value
+                    )
+                )
+            },
+            enabled = startTimeState.value != timeEntryInternalParameters.timeEntry.start
+                    || stopTimeState.value != timeEntryInternalParameters.timeEntry.stop
+        ) {
+            Text("Save ${
+                startTimeState.value != timeEntryInternalParameters.timeEntry.start
+                        || stopTimeState.value != timeEntryInternalParameters.timeEntry.stop
+            }")
+        }
+
     }
 
 }
@@ -94,14 +140,11 @@ private fun TimeEntryInternal(
 @Composable
 private fun ShowOverview(
     timeEntry: TimeEntry,
-    context: Context,
     screenShowing: MutableState<TimeEntryShowing>
 ) {
     val start by remember { mutableStateOf(timeEntry.start) }
 
-    Row {
-        Text("Start:")
-    }
+    Text("Start:")
     Row {
         Text(
             modifier = Modifier.clickable {
@@ -109,8 +152,6 @@ private fun ShowOverview(
             },
             text = dateFormatter.format(start.atZone(ZoneId.systemDefault()))
         )
-    }
-    Row {
         Text(
             modifier = Modifier.clickable {
                 screenShowing.value = TimeEntryShowing.TIME_PICKER_START
@@ -120,11 +161,8 @@ private fun ShowOverview(
     }
 
     timeEntry.stop?.let { stop ->
-        val stopState = remember { mutableStateOf(stop) }
+        Text("Stop:")
 
-        Row {
-            Text("Stop:")
-        }
         Row {
             Text(
                 modifier = Modifier.clickable {
@@ -132,8 +170,6 @@ private fun ShowOverview(
                 },
                 text = dateFormatter.format(stop.atZone(ZoneId.systemDefault()))
             )
-        }
-        Row {
             Text(
                 modifier = Modifier.clickable {
                     screenShowing.value = TimeEntryShowing.TIME_PICKER_STOP
@@ -154,25 +190,35 @@ data class TimeEntryEditUiState(
 @Composable
 private fun EditDate(
     instantState: MutableState<Instant>,
-    context: Context,
     screenShowing: MutableState<TimeEntryShowing>
 ) {
-    val localDateTime = LocalDateTime.ofInstant(instantState.value, ZoneId.systemDefault())
+    var localDateTime =
+        remember { LocalDateTime.ofInstant(instantState.value, ZoneId.systemDefault()) }
 
     DatePickerDialog(
         {
             screenShowing.value = TimeEntryShowing.OVERVIEW
         },
-        {
-            // TODO
+        confirmButton = {
+            TextButton(onClick = {
+                instantState.value =
+                    localDateTime.toInstant(ZoneId.systemDefault().rules.getOffset(instantState.value))
+                screenShowing.value = TimeEntryShowing.OVERVIEW
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                screenShowing.value = TimeEntryShowing.OVERVIEW
+            }) {
+                Text("Cancel")
+            }
         }
     ) {
-
-
         AndroidView(
             modifier = Modifier.wrapContentSize(),
             factory = { context ->
-
                 CalendarView(
                     ContextThemeWrapper(
                         context,
@@ -185,29 +231,12 @@ private fun EditDate(
 //                    view.maxDate = // contraints
 
                 view.setOnDateChangeListener { _, year, month, dayOfMonth ->
-                    instantState.value = localDateTime.withYear(year)
+                    localDateTime = localDateTime.withYear(year)
                         .withMonth(month)
                         .withDayOfMonth(dayOfMonth)
-                        .toInstant(ZoneId.systemDefault().rules.getOffset(instantState.value))
                 }
             }
         )
-
-
-//        val datePicker = DatePicker(context)
-//
-//            datePicker.init(
-//            localDateTime.year,
-//            localDateTime.monthValue,
-//            localDateTime.dayOfMonth
-//        ) { _, year, monthOfYear, dayOfMonth ->
-//            instantState.value = localDateTime.withYear(year)
-//                .withMonth(monthOfYear)
-//                .withDayOfMonth(dayOfMonth)
-//                .toInstant(ZoneId.systemDefault().rules.getOffset(instantState.value))
-//        }
-
-
     }
 }
 
@@ -216,41 +245,49 @@ private fun EditDate(
 @Composable
 private fun EditTime(
     instantState: MutableState<Instant>,
-    context: Context,
     screenShowing: MutableState<TimeEntryShowing>
 ) {
-    val localDateTime = LocalDateTime.ofInstant(instantState.value, ZoneId.systemDefault())
+    var localDateTime = LocalDateTime.ofInstant(instantState.value, ZoneId.systemDefault())
 
     DatePickerDialog(
         {
             screenShowing.value = TimeEntryShowing.OVERVIEW
         },
-        {
-            // TODO
+        confirmButton = {
+            TextButton(onClick = {
+                instantState.value =
+                    localDateTime.toInstant(ZoneId.systemDefault().rules.getOffset(instantState.value))
+                screenShowing.value = TimeEntryShowing.OVERVIEW
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                screenShowing.value = TimeEntryShowing.OVERVIEW
+            }) {
+                Text("Cancel")
+            }
         }
     ) {
-        val timePicker = TimePicker(context)
-        timePicker.hour = localDateTime.hour
-        timePicker.minute = localDateTime.minute
+        AndroidView(
+            modifier = Modifier.wrapContentSize(),
+            factory = { context ->
+                TimePicker(context).also {
+                    it.hour = localDateTime.hour
+                    it.minute = localDateTime.minute
+                }
+            },
+            update = { view ->
+//                view.minDate = // contraints
+//                    view.maxDate = // contraints
 
-        timePicker.setOnTimeChangedListener { _, hourOfDay, minute ->
-            instantState.value = localDateTime
-                .withHour(hourOfDay)
-                .withMinute(minute)
-                .toInstant(ZoneId.systemDefault().rules.getOffset(instantState.value))
-        }
+                view.setOnTimeChangedListener { _, hourOfDay, minute ->
+                    localDateTime = localDateTime
+                        .withHour(hourOfDay)
+                        .withMinute(minute)
+                }
+            }
+        )
     }
-
-//    val timePickerDialog = TimePickerDialog(
-//        context,
-//        { _, hourOfDay, minute ->
-//            instantState.value = localDateTime.withHour(hourOfDay).withMinute(minute)
-//                .toInstant(ZoneId.systemDefault().rules.getOffset(instantState.value))
-//        },
-//        hour,
-//        inputMinute,
-//        true
-//    )
-//
-//    timePickerDialog.show()
 }
