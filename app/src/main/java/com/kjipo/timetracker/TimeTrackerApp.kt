@@ -2,15 +2,15 @@ package com.kjipo.timetracker
 
 import androidx.compose.runtime.Composable
 import com.kjipo.timetracker.ui.theme.TimeTrackerTheme
-import androidx.compose.material.Scaffold
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import timber.log.Timber
 
 
 @Composable
@@ -27,16 +27,23 @@ fun TimeTrackerApp(appContainer: AppContainer) {
 @Composable
 fun rememberTimeTrackerAppState(
     scaffoldState: ScaffoldState = rememberScaffoldState(),
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    taskScreenShowing: MutableState<Boolean> = remember {
+        mutableStateOf(true)
+    }
 ) = remember(scaffoldState) {
-    TimeTrackerAppState(scaffoldState,
-    navController)
+    TimeTrackerAppState(
+        scaffoldState,
+        navController,
+        taskScreenShowing
+    )
 }
 
 
 class TimeTrackerAppState(
     val scaffoldState: ScaffoldState,
-    val navController: NavHostController
+    val navController: NavHostController,
+    val taskScreenShowing: MutableState<Boolean>
 ) {
 
     val currentRoute: String?
@@ -46,10 +53,10 @@ class TimeTrackerAppState(
     fun navigateToScreen(route: String) {
         if (route != currentRoute) {
 
-            Timber.tag("Navigation").i("Route: $route")
-
             // TODO Is this a good way to handle the route to the task screen?
             navController.navigate(route) {
+                taskScreenShowing.value = route.startsWith(Screens.TASK.name)
+
                 launchSingleTop = true
                 restoreState = !route.startsWith(Screens.TASK.name)
                 // Pop up backstack to the first destination and save state. This makes going back
@@ -60,6 +67,7 @@ class TimeTrackerAppState(
             }
         }
     }
+
 
     private val NavGraph.startDestination: NavDestination?
         get() = findNode(startDestinationId)

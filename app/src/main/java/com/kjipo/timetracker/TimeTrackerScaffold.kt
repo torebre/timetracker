@@ -2,12 +2,13 @@ package com.kjipo.timetracker
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
@@ -32,6 +33,11 @@ fun TimeTrackerScaffold(
     Scaffold(
         bottomBar = {
             TimeTrackerBottomBar(appState::navigateToScreen)
+        },
+        floatingActionButton = {
+            AddTaskButton(appState.taskScreenShowing) {
+                appState.navigateToScreen("${Screens.TASK.name}/0")
+            }
         }
 
     ) { paddingValues ->
@@ -71,6 +77,8 @@ fun TimeTrackerScaffold(
             ) { navBackStackEntry ->
 
                 navBackStackEntry.arguments?.getLong("taskId")?.let { taskId ->
+
+
                     val taskScreenModel: TaskScreenModel = viewModel(
                         factory = TaskScreenModel.provideFactory(
                             taskId,
@@ -106,9 +114,23 @@ fun TimeTrackerScaffold(
                         }
                     }
 
-                    TimeEntryScreen(uiState, {
-
-                    })
+                    TimeEntryScreen(uiState, { timeEntry ->
+                        coroutineScope.launch(Dispatchers.IO) {
+                            appContainer.taskRepository.updateTimeEntry(timeEntry)
+                            coroutineScope.launch(Dispatchers.Main) {
+                                appState.navigateToScreen("${Screens.TASK.name}/${timeEntry.taskId}")
+                            }
+                        }
+                    },
+                        {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                appContainer.taskRepository.getTimeEntry(timeEntryId)?.let {
+                                    coroutineScope.launch(Dispatchers.Main) {
+                                        appState.navigateToScreen("${Screens.TASK.name}/${it.taskId}")
+                                    }
+                                }
+                            }
+                        })
                 }
             }
         }
@@ -136,4 +158,22 @@ fun TimeTrackerBottomBar(
 
     }
 
+}
+
+@Composable
+fun AddTaskButton(taskScreenShowing: MutableState<Boolean>, addTask: () -> Unit) {
+    if (taskScreenShowing.value) {
+        FloatingActionButton(
+            onClick = addTask,
+            modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        ) {
+            Icon(
+                imageVector = Icons.Default.AddCircle,
+                contentDescription = "Add task",
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
 }

@@ -12,6 +12,8 @@ interface TaskRepository {
     suspend fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries?
     suspend fun getTasks(): List<Task>
 
+    suspend fun createTask(): Task
+
     suspend fun updateTask(task: Task)
     suspend fun getTasksWithTimeEntries(): List<TaskWithTimeEntries>
 
@@ -20,6 +22,8 @@ interface TaskRepository {
     suspend fun setStopForTimeEntry(timeEntryId: Long, stop: Instant)
 
     suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
+
+    suspend fun updateTimeEntry(timeEntry: TimeEntry)
 
 }
 
@@ -32,6 +36,13 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun getTasks(): List<Task> {
         return appDatabase.taskDao().getTasks()
+    }
+
+    override suspend fun createTask(): Task {
+        val newTask = Task(0, "")
+        appDatabase.taskDao().insertTask(newTask).also { newTask.taskId = it }
+
+        return newTask
     }
 
     override suspend fun updateTask(task: Task) {
@@ -54,6 +65,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun getTimeEntry(timeEntryId: Long): TimeEntry? {
         return appDatabase.timeEntryDao().getTimeEntry(timeEntryId)
+    }
+
+    override suspend fun updateTimeEntry(timeEntry: TimeEntry) {
+        appDatabase.timeEntryDao().updateTimeEntry(timeEntry)
     }
 
 

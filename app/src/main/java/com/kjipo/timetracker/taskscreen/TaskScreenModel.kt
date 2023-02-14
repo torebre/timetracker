@@ -14,39 +14,40 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 
-class TaskScreenModel(val taskId: Long, taskRepository: TaskRepository) : ViewModel() {
+class TaskScreenModel(taskId: Long, taskRepository: TaskRepository) : ViewModel() {
 
     private val viewModelState = MutableStateFlow(TaskScreenUiState())
 
-    val uiState = viewModelState.stateIn(viewModelScope,
+    val uiState = viewModelState.stateIn(
+        viewModelScope,
         SharingStarted.Eagerly,
-        viewModelState.value)
+        viewModelState.value
+    )
 
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-                taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
+            taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
 
-                    Timber.tag("Task").i("Number of time entries: ${taskWithTimeEntries.timeEntries.size}")
+                Timber.tag("Task")
+                    .i("Number of time entries: ${taskWithTimeEntries.timeEntries.size}")
 
-                    viewModelState.update {
-                        TaskScreenUiState(
-                            taskWithTimeEntries.task.taskId,
-                            taskWithTimeEntries.task.title,
-                            taskWithTimeEntries.timeEntries
-                        )
-                    }
+                viewModelState.update {
+                    TaskScreenUiState(
+                        taskWithTimeEntries.task.taskId,
+                        taskWithTimeEntries.task.title,
+                        taskWithTimeEntries.timeEntries
+                    )
                 }
+            }
         }
     }
 
 
-
-
-
     companion object {
 
-        fun provideFactory(taskId: Long,
+        fun provideFactory(
+            taskId: Long,
             taskRepository: TaskRepository
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
