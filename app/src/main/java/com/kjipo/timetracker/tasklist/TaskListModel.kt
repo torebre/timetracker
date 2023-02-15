@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.time.Duration
 import java.time.Instant
 import java.time.Instant.now
@@ -33,16 +34,27 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     fun toggleStartStop(taskId: Long) {
+
+        Timber.tag("TaskList").i("Task ID: $taskId")
+
+
         viewModelScope.launch(Dispatchers.IO) {
             taskRepository.getTaskWithTimeEntries(taskId)?.let { task ->
                 val anyEntriesStopped = task.timeEntries.map { timeEntry ->
+
+                    Timber.tag("TaskList").i("Time entry stop: ${timeEntry.stop}")
+
                     if (timeEntry.stop == null) {
                         taskRepository.setStopForTimeEntry(timeEntry.timeEntryId, now())
                         true
                     } else {
                         false
                     }
-                }.any()
+                }.any {
+                    it
+                }
+
+                Timber.tag("TaskList").i("Number of time entries: ${task.timeEntries.size}")
 
                 if (!anyEntriesStopped) {
                     // No ongoing entries, create a new time entry to start the task
@@ -54,6 +66,12 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
 
 
+    }
+
+    fun refresh() {
+        viewModelScope.launch(Dispatchers.IO) {
+            reloadTasks()
+        }
     }
 
     private suspend fun reloadTasks() {
@@ -98,13 +116,7 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 }
 
 
-data class TaskListUiState(val tasks: List<TaskUi> = emptyList()) {
+data class TaskListUiState(val tasks: List<TaskUi> = emptyList())
 
 
-}
-
-
-data class TaskUi(val id: Long, val title: String, val duration: Duration, val ongoing: Boolean) {
-
-
-}
+data class TaskUi(val id: Long, val title: String, val duration: Duration, val ongoing: Boolean)

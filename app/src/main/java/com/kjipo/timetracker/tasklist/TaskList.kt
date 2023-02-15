@@ -3,6 +3,7 @@ package com.kjipo.timetracker.tasklist
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -66,16 +67,18 @@ fun TaskList(
 @Composable
 fun TaskList(@PreviewParameter(TaskListParameterInputProvider::class) taskListInputParameters: TaskListInputParameters) {
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        for (task in taskListInputParameters.taskListUiState.tasks) {
-            item {
-                TaskRow(
-                    TaskRowInput(
-                        task,
-                        taskListInputParameters.navigateToTaskScreen,
-                        taskListInputParameters.toggleStartStop
-                    )
+        items(items = taskListInputParameters.taskListUiState.tasks,
+        key = {taskUi ->
+            taskUi.id
+        }) {task ->
+            TaskRow(
+                TaskRowInput(
+                    task,
+                    taskListInputParameters.navigateToTaskScreen,
+                    taskListInputParameters.toggleStartStop
                 )
-            }
+            )
+
         }
     }
 }

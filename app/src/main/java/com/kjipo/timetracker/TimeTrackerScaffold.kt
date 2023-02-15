@@ -21,6 +21,7 @@ import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +54,9 @@ fun TimeTrackerScaffold(
                     )
                 )
 
+                Timber.tag("Navigation").i("Creating new TaskList. Model: ${taskListModel}")
+                taskListModel.refresh()
+
                 TaskList(taskListModel, { taskId ->
                     appState.navigateToScreen("${Screens.TASK.name}/$taskId")
                 },
@@ -75,10 +79,7 @@ fun TimeTrackerScaffold(
                     type = NavType.LongType
                 })
             ) { navBackStackEntry ->
-
                 navBackStackEntry.arguments?.getLong("taskId")?.let { taskId ->
-
-
                     val taskScreenModel: TaskScreenModel = viewModel(
                         factory = TaskScreenModel.provideFactory(
                             taskId,
@@ -86,10 +87,10 @@ fun TimeTrackerScaffold(
                         )
                     )
 
-                    TaskScreen(taskScreenModel, {
+                    Timber.tag("Navigation").i("Creating new TaskScreen. Model: ${taskScreenModel}")
 
-                        // TODO Implement save functionality
-
+                    TaskScreen(taskScreenModel, { title ->
+                        taskScreenModel.saveTask(title)
                     },
                         { timeEntryId ->
                             appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")

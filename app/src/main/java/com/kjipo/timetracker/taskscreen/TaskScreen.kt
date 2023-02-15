@@ -65,7 +65,7 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 
 class TaskScreenInput(
     val taskScreenUiState: TaskScreenUiState,
-    val saveData: () -> Unit,
+    val saveData: (String) -> Unit,
     val navigateToTimeEditScreen: (Long) -> Unit
 ) {
     // Do nothing
@@ -76,7 +76,7 @@ class TaskScreenInput(
 @Composable
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
-    saveTask: () -> Unit,
+    saveTask: (String) -> Unit,
     navigateToTimeEditScreen: (Long) -> Unit
 ) {
     val uiState = taskScreenModel.uiState.collectAsState()
@@ -95,7 +95,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
     Column {
         Row {
             TextField(
-                value = taskScreenInput.taskScreenUiState.taskName,
+                value = inputText.value,
                 onValueChange = { inputText.value = it },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -114,7 +114,9 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             horizontalArrangement = Arrangement.Center
         ) {
             Button(
-                onClick = taskScreenInput.saveData,
+                onClick = {
+                    taskScreenInput.saveData(inputText.value)
+                },
                 enabled = inputText.value != taskScreenInput.taskScreenUiState.taskName
             ) {
                 Text("Save")

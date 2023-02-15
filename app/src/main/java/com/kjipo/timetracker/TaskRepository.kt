@@ -1,5 +1,6 @@
 package com.kjipo.timetracker
 
+import androidx.room.Transaction
 import com.kjipo.timetracker.database.AppDatabase
 import com.kjipo.timetracker.database.Task
 import com.kjipo.timetracker.database.TaskWithTimeEntries
@@ -12,7 +13,7 @@ interface TaskRepository {
     suspend fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries?
     suspend fun getTasks(): List<Task>
 
-    suspend fun createTask(): Task
+    suspend fun createTask(title: String = ""): Task
 
     suspend fun updateTask(task: Task)
     suspend fun getTasksWithTimeEntries(): List<TaskWithTimeEntries>
@@ -24,6 +25,7 @@ interface TaskRepository {
     suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
 
     suspend fun updateTimeEntry(timeEntry: TimeEntry)
+    suspend fun saveTask(taskId: Long, taskName: String)
 
 }
 
@@ -38,8 +40,8 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         return appDatabase.taskDao().getTasks()
     }
 
-    override suspend fun createTask(): Task {
-        val newTask = Task(0, "")
+    override suspend fun createTask(title: String): Task {
+        val newTask = Task(0, title)
         appDatabase.taskDao().insertTask(newTask).also { newTask.taskId = it }
 
         return newTask
@@ -69,6 +71,13 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun updateTimeEntry(timeEntry: TimeEntry) {
         appDatabase.timeEntryDao().updateTimeEntry(timeEntry)
+    }
+
+    @Transaction
+    override suspend fun saveTask(taskId: Long, taskName: String) {
+        appDatabase.taskDao().getTask(taskId)?.let { task ->
+            appDatabase.taskDao().updateTask(task.copy(title = taskName))
+        }
     }
 
 

@@ -26,4 +26,7 @@ interface TaskDao {
     @Query("SELECT * FROM task")
     fun getTasksWithTimeEntries(): List<TaskWithTimeEntries>
 
+    @Query("SELECT * FROM task WHERE task.taskId = :taskId")
+    fun getTask(taskId: Long): Task?
+
 }

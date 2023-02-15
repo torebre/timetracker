@@ -14,7 +14,8 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 
-class TaskScreenModel(taskId: Long, taskRepository: TaskRepository) : ViewModel() {
+class TaskScreenModel(private var taskId: Long, private val taskRepository: TaskRepository) :
+    ViewModel() {
 
     private val viewModelState = MutableStateFlow(TaskScreenUiState())
 
@@ -27,22 +28,33 @@ class TaskScreenModel(taskId: Long, taskRepository: TaskRepository) : ViewModel(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
-
-                Timber.tag("Task")
-                    .i("Number of time entries: ${taskWithTimeEntries.timeEntries.size}")
-
-                viewModelState.update {
-                    TaskScreenUiState(
-                        taskWithTimeEntries.task.taskId,
-                        taskWithTimeEntries.task.title,
-                        taskWithTimeEntries.timeEntries
-                    )
-                }
-            }
+            loadTask()
         }
     }
 
+
+    fun saveTask(taskName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (taskId == 0L) {
+                taskId = taskRepository.createTask().taskId
+            } else {
+                taskRepository.saveTask(taskId, taskName)
+            }
+            loadTask()
+        }
+    }
+
+    private suspend fun loadTask() {
+        taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
+            viewModelState.update {
+                TaskScreenUiState(
+                    taskWithTimeEntries.task.taskId,
+                    taskWithTimeEntries.task.title,
+                    taskWithTimeEntries.timeEntries
+                )
+            }
+        }
+    }
 
     companion object {
 
