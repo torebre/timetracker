@@ -6,5 +6,6 @@ enum class Screens {
     TASKS,
     REPORTS,
     TASK,
-    TIME_ENTRY_EDIT
+    TIME_ENTRY_EDIT,
+    TAGS
 }

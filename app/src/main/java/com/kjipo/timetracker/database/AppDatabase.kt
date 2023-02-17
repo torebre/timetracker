@@ -4,12 +4,14 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [TimeEntry::class, Task::class, Project::class,
-    TimeEntryTaskCrossRef::class, ProjectTasksCrossRef::class], version = 1)
+@Database(
+    entities = [TimeEntry::class, Task::class, Tag::class,
+        TimeEntryTaskCrossRef::class, TagTasksCrossRef::class], version = 2
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun projectDao(): ProjectDao
+    abstract fun tagDao(): TagDao
 
     abstract fun taskDao(): TaskDao
 

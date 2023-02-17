@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.timeFormatter
+import timber.log.Timber
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -88,6 +89,10 @@ fun TaskScreen(
 @Preview
 @Composable
 fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenInput: TaskScreenInput) {
+    if(taskScreenInput.taskScreenUiState.initialLoading) {
+        return
+    }
+
     val inputText = remember {
         mutableStateOf(taskScreenInput.taskScreenUiState.taskName)
     }

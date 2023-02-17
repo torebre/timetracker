@@ -5,8 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kjipo.timetracker.database.Project
-import com.kjipo.timetracker.database.ProjectDao
+import com.kjipo.timetracker.database.Tag
+import com.kjipo.timetracker.database.TagDao
 import com.kjipo.timetracker.database.AppDatabase
 import com.kjipo.timetracker.database.TimeEntryDao
 import kotlinx.coroutines.runBlocking
@@ -19,7 +19,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class TimeEntryStorageTest {
     private lateinit var timeEntryDao: TimeEntryDao
-    private lateinit var projectDao: ProjectDao
+    private lateinit var tagDao: TagDao
     private lateinit var database: AppDatabase
     private lateinit var context: Context
 
@@ -28,7 +28,7 @@ class TimeEntryStorageTest {
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         timeEntryDao = database.timeEntryDao()
-        projectDao = database.projectDao()
+        tagDao = database.tagDao()
     }
 
     @After
@@ -39,11 +39,11 @@ class TimeEntryStorageTest {
     @Test
     fun storeProjectTest() = runBlocking {
         val title = "Test project"
-        val project = Project(title = title)
+        val tag = Tag(title = title)
 
-        projectDao.insertProject(project)
+        tagDao.insertTag(tag)
 
-        val projects = projectDao.getProjects()
+        val projects = tagDao.getTags()
 
         assertThat(projects.size, equalTo(1))
     }

@@ -1,10 +1,7 @@
 package com.kjipo.timetracker
 
 import androidx.room.Transaction
-import com.kjipo.timetracker.database.AppDatabase
-import com.kjipo.timetracker.database.Task
-import com.kjipo.timetracker.database.TaskWithTimeEntries
-import com.kjipo.timetracker.database.TimeEntry
+import com.kjipo.timetracker.database.*
 import java.time.Instant
 
 
@@ -26,6 +23,11 @@ interface TaskRepository {
 
     suspend fun updateTimeEntry(timeEntry: TimeEntry)
     suspend fun saveTask(taskId: Long, taskName: String)
+
+    suspend fun getTags(): List<Tag>
+
+    suspend fun insertTag(tag: Tag): Long
+    suspend fun updateTag(tag: Tag)
 
 }
 
@@ -78,6 +80,18 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         appDatabase.taskDao().getTask(taskId)?.let { task ->
             appDatabase.taskDao().updateTask(task.copy(title = taskName))
         }
+    }
+
+    override suspend fun getTags(): List<Tag> {
+        return appDatabase.tagDao().getTags()
+    }
+
+    override suspend fun insertTag(tag: Tag): Long {
+        return appDatabase.tagDao().insertTag(tag)
+    }
+
+    override suspend fun updateTag(tag: Tag) {
+        appDatabase.tagDao().updateTag(tag)
     }
 
 

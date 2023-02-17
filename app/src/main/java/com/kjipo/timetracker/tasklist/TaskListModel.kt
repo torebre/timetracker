@@ -34,16 +34,9 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     fun toggleStartStop(taskId: Long) {
-
-        Timber.tag("TaskList").i("Task ID: $taskId")
-
-
         viewModelScope.launch(Dispatchers.IO) {
             taskRepository.getTaskWithTimeEntries(taskId)?.let { task ->
                 val anyEntriesStopped = task.timeEntries.map { timeEntry ->
-
-                    Timber.tag("TaskList").i("Time entry stop: ${timeEntry.stop}")
-
                     if (timeEntry.stop == null) {
                         taskRepository.setStopForTimeEntry(timeEntry.timeEntryId, now())
                         true
@@ -54,8 +47,6 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
                     it
                 }
 
-                Timber.tag("TaskList").i("Number of time entries: ${task.timeEntries.size}")
-
                 if (!anyEntriesStopped) {
                     // No ongoing entries, create a new time entry to start the task
                     taskRepository.addTimeEntry(TimeEntry(0, taskId, now()))
@@ -64,7 +55,6 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
             reloadTasks()
         }
-
 
     }
 
@@ -93,7 +83,7 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     private fun sumTimeEntriesForTask(task: TaskWithTimeEntries): Duration {
         return task.timeEntries.sumOf { timeEntry ->
-            val stop = timeEntry.stop ?: Instant.now()
+            val stop = timeEntry.stop ?: now()
             stop.toEpochMilli() - timeEntry.start.toEpochMilli()
         }
             .let { Duration.ofMillis(it) }

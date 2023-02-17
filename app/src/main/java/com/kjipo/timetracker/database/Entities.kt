@@ -23,13 +23,13 @@ data class TimeEntry(
 @Entity
 data class Task(
     @PrimaryKey(autoGenerate = true) var taskId: Long = 0,
-    var title: String
+    val title: String
 )
 
 @Entity
-data class Project(
-    @PrimaryKey(autoGenerate = true) var projectId: Long = 0,
-    var title: String
+data class Tag(
+    @PrimaryKey(autoGenerate = true) var tagId: Long = 0,
+    val title: String
 )
 
 @Entity(primaryKeys = ["timeEntryId", "taskId"])
@@ -40,11 +40,11 @@ data class TimeEntryTaskCrossRef(
 
 
 @Entity(
-    primaryKeys = ["projectId", "taskId"],
+    primaryKeys = ["tagId", "taskId"],
     indices = [Index("taskId")]
 )
-data class ProjectTasksCrossRef(
-    val projectId: Long,
+data class TagTasksCrossRef(
+    val tagId: Long,
     val taskId: Long
 )
 
@@ -58,12 +58,12 @@ data class TaskWithTimeEntries(
     val timeEntries: List<TimeEntry>
 )
 
-data class ProjectWithTaskEntries(
-    @Embedded val project: Project,
+data class TagWithTaskEntries(
+    @Embedded val tag: Tag,
     @Relation(
-        parentColumn = "projectId",
+        parentColumn = "tagId",
         entityColumn = "taskId",
-        associateBy = Junction(ProjectTasksCrossRef::class)
+        associateBy = Junction(TagTasksCrossRef::class)
     )
     val taskEntries: List<Task>
 )

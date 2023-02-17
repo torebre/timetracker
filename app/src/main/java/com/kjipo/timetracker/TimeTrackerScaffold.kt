@@ -13,6 +13,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.kjipo.timetracker.tagscreen.TagModel
+import com.kjipo.timetracker.tagscreen.TagScreen
+import com.kjipo.timetracker.tagscreen.TagScreenInputParameter
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
 import com.kjipo.timetracker.taskscreen.TaskScreen
@@ -87,8 +90,6 @@ fun TimeTrackerScaffold(
                         )
                     )
 
-                    Timber.tag("Navigation").i("Creating new TaskScreen. Model: ${taskScreenModel}")
-
                     TaskScreen(taskScreenModel, { title ->
                         taskScreenModel.saveTask(title)
                     },
@@ -134,6 +135,16 @@ fun TimeTrackerScaffold(
                         })
                 }
             }
+
+            composable(Screens.TAGS.name) { navBackStackEntry ->
+                val tagModel: TagModel = viewModel(
+                    factory =  TagModel.provideFactory(
+                        appContainer.taskRepository
+                    )
+                )
+                
+                TagScreen(tagModel)
+            }
         }
     }
 
@@ -157,6 +168,11 @@ fun TimeTrackerBottomBar(
             Text("Reports")
         }
 
+        Button(onClick = {
+            navigateToRoute(Screens.TAGS.name)
+        }) {
+            Text("Tags")
+        }
     }
 
 }

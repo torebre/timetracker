@@ -1,21 +1,8 @@
 package com.kjipo.timetracker
 
 import android.content.Context
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.LifecycleCoroutineScope
-import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.kjipo.timetracker.database.AppDatabase
-import com.kjipo.timetracker.database.Project
-import com.kjipo.timetracker.database.Task
-import com.kjipo.timetracker.database.TimeEntry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.withContext
-import java.time.Instant.now
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import kotlinx.coroutines.launch
 
 
 interface AppContainer {

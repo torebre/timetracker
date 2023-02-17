@@ -6,12 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.kjipo.timetracker.TaskRepository
 import com.kjipo.timetracker.database.TimeEntry
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 
 class TaskScreenModel(private var taskId: Long, private val taskRepository: TaskRepository) :
@@ -27,8 +23,12 @@ class TaskScreenModel(private var taskId: Long, private val taskRepository: Task
 
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
-            loadTask()
+        if (taskId != 0L) {
+            viewModelScope.launch(Dispatchers.IO) {
+                loadTask()
+            }
+        } else {
+            viewModelState.update { it.copy(initialLoading = false) }
         }
     }
 
@@ -47,10 +47,11 @@ class TaskScreenModel(private var taskId: Long, private val taskRepository: Task
     private suspend fun loadTask() {
         taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
             viewModelState.update {
-                TaskScreenUiState(
-                    taskWithTimeEntries.task.taskId,
-                    taskWithTimeEntries.task.title,
-                    taskWithTimeEntries.timeEntries
+                it.copy(
+                    taskId = taskWithTimeEntries.task.taskId,
+                    taskName = taskWithTimeEntries.task.title,
+                    timeEntries = taskWithTimeEntries.timeEntries,
+                    initialLoading = false
                 )
             }
         }
@@ -77,5 +78,6 @@ class TaskScreenModel(private var taskId: Long, private val taskRepository: Task
 data class TaskScreenUiState(
     val taskId: Long = 0,
     val taskName: String = "",
-    val timeEntries: List<TimeEntry> = emptyList()
+    val timeEntries: List<TimeEntry> = emptyList(),
+    val initialLoading: Boolean = true
 )
