@@ -4,12 +4,10 @@ import androidx.room.*
 import androidx.room.ForeignKey.Companion.CASCADE
 import java.time.Instant
 
-@Entity(foreignKeys = arrayOf(
-    ForeignKey(entity = Task::class,
-        parentColumns = ["taskId"],
-        childColumns = ["taskId"],
-        onDelete = CASCADE)
-)
+@Entity(foreignKeys = [ForeignKey(entity = Task::class,
+    parentColumns = ["taskId"],
+    childColumns = ["taskId"],
+    onDelete = CASCADE)]
 )
 data class TimeEntry(
     @PrimaryKey(autoGenerate = true) var timeEntryId: Long = 0,
@@ -51,11 +49,19 @@ data class TagTasksCrossRef(
 
 data class TaskWithTimeEntries(
     @Embedded val task: Task,
+
     @Relation(
         parentColumn = "taskId",
         entityColumn = "taskId",
     )
-    val timeEntries: List<TimeEntry>
+    val timeEntries: List<TimeEntry>,
+
+    @Relation(
+        parentColumn = "taskId",
+        entityColumn = "tagId",
+        associateBy = Junction(TagTasksCrossRef::class)
+    )
+    val tags: List<Tag>
 )
 
 data class TagWithTaskEntries(

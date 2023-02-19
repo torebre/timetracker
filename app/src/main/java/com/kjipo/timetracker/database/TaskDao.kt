@@ -29,4 +29,10 @@ interface TaskDao {
     @Query("SELECT * FROM task WHERE task.taskId = :taskId")
     fun getTask(taskId: Long): Task?
 
+    @Insert
+    fun insertTaskAndTagCrossRef(tagTasksCrossRef: TagTasksCrossRef): Long
+
+    @Delete
+    fun removeTaskAndTagCrossRef(tagTasksCrossRef: TagTasksCrossRef)
+
 }

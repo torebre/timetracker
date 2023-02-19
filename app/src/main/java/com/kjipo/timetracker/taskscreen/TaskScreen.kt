@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.InputChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -30,19 +32,23 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
     override val values = sequenceOf(
         TaskScreenInput(
             TaskScreenUiState(
-                1,
-                "Task name",
+                TaskUi(
+                    1,
+                    "Task name"
+                ),
                 listOf(
-                    TimeEntry(
-                        1, 1, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                    TimeEntryUi(
+                        1,
+                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
                             ZoneOffset.UTC
                         ),
                         LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
                             ZoneOffset.UTC
                         )
                     ),
-                    TimeEntry(
-                        2, 1, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                    TimeEntryUi(
+                        2,
+                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
                             ZoneOffset.UTC
                         ),
                         LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
@@ -51,6 +57,9 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
                     )
                 )
             ),
+            {
+                // Do nothing
+            },
             {
                 // Do nothing
             },
@@ -67,34 +76,32 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 class TaskScreenInput(
     val taskScreenUiState: TaskScreenUiState,
     val saveData: (String) -> Unit,
-    val navigateToTimeEditScreen: (Long) -> Unit
-) {
-    // Do nothing
-
-}
-
+    val navigateToTimeEditScreen: (Long) -> Unit,
+    val removeTag: (Long) -> Unit
+)
 
 @Composable
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
     saveTask: (String) -> Unit,
-    navigateToTimeEditScreen: (Long) -> Unit
+    navigateToTimeEditScreen: (Long) -> Unit,
+    removeTag: (Long) -> Unit
 ) {
     val uiState = taskScreenModel.uiState.collectAsState()
 
-    TaskScreen(TaskScreenInput(uiState.value, saveTask, navigateToTimeEditScreen))
+    TaskScreen(TaskScreenInput(uiState.value, saveTask, navigateToTimeEditScreen, removeTag))
 }
 
 
 @Preview
 @Composable
 fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenInput: TaskScreenInput) {
-    if(taskScreenInput.taskScreenUiState.initialLoading) {
+    if (taskScreenInput.taskScreenUiState.initialLoading) {
         return
     }
 
     val inputText = remember {
-        mutableStateOf(taskScreenInput.taskScreenUiState.taskName)
+        mutableStateOf(taskScreenInput.taskScreenUiState.taskUi.taskName)
     }
 
     Column {
@@ -105,6 +112,14 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 modifier = Modifier.fillMaxWidth()
             )
         }
+
+       Row {
+          taskScreenInput.taskScreenUiState.tags.forEach {
+              Tag(it.title) {
+                  taskScreenInput.removeTag(it.tagId)
+              }
+          }
+       }
 
         for (timeEntry in taskScreenInput.taskScreenUiState.timeEntries) {
             LazyRow {
@@ -122,7 +137,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 onClick = {
                     taskScreenInput.saveData(inputText.value)
                 },
-                enabled = inputText.value != taskScreenInput.taskScreenUiState.taskName
+                enabled = inputText.value != taskScreenInput.taskScreenUiState.taskUi.taskName
             ) {
                 Text("Save")
             }
@@ -134,10 +149,12 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
 
 
 @Composable
-fun TimeEntryRow(timeEntry: TimeEntry, navigateToTimeEditScreen: (Long) -> Unit) {
+fun TimeEntryRow(timeEntry: TimeEntryUi, navigateToTimeEditScreen: (Long) -> Unit) {
     Column(modifier = Modifier.padding(start = 5.dp, top = 5.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             timeEntry.start.let {
                 val date = dateFormatter.format(it.atZone(ZoneId.systemDefault()))
                 val time = timeFormatter.format(it.atZone(ZoneId.systemDefault()))
@@ -154,7 +171,7 @@ fun TimeEntryRow(timeEntry: TimeEntry, navigateToTimeEditScreen: (Long) -> Unit)
 
             IconButton(modifier = Modifier.padding(end = 5.dp),
                 onClick = {
-                    navigateToTimeEditScreen(timeEntry.timeEntryId)
+                    navigateToTimeEditScreen(timeEntry.id)
                 }) {
                 Icon(
                     imageVector = Icons.Default.Edit,
@@ -163,5 +180,17 @@ fun TimeEntryRow(timeEntry: TimeEntry, navigateToTimeEditScreen: (Long) -> Unit)
             }
         }
     }
+
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Tag(tagTitle: String, removeTag: () -> Unit) {
+    InputChip(
+        selected = true, onClick = {
+            removeTag()
+        },
+        label = { Text(tagTitle) })
 
 }

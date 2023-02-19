@@ -29,6 +29,8 @@ interface TaskRepository {
     suspend fun insertTag(tag: Tag): Long
     suspend fun updateTag(tag: Tag)
 
+    suspend fun removeTag(taskId: Long, tagId: Long)
+
 }
 
 
@@ -92,6 +94,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun updateTag(tag: Tag) {
         appDatabase.tagDao().updateTag(tag)
+    }
+
+    override suspend fun removeTag(taskId: Long, tagId: Long) {
+        appDatabase.taskDao().removeTaskAndTagCrossRef(TagTasksCrossRef(taskId, tagId))
     }
 
 

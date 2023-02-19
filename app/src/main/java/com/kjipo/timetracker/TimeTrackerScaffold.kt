@@ -95,6 +95,8 @@ fun TimeTrackerScaffold(
                     },
                         { timeEntryId ->
                             appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
+                        }, {tagId ->
+                            taskScreenModel.removeTag(tagId)
                         })
                 }
             }
