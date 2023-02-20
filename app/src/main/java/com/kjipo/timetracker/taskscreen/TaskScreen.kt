@@ -1,10 +1,11 @@
 package com.kjipo.timetracker.taskscreen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.InputChip
@@ -18,10 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.timeFormatter
-import timber.log.Timber
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -113,13 +112,13 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             )
         }
 
-       Row {
-          taskScreenInput.taskScreenUiState.tags.forEach {
-              Tag(it.title) {
-                  taskScreenInput.removeTag(it.tagId)
-              }
-          }
-       }
+        Row {
+            taskScreenInput.taskScreenUiState.tags.forEach { tagUi ->
+                Tag(tagUi) {
+                    taskScreenInput.removeTag(tagUi.tagId)
+                }
+            }
+        }
 
         for (timeEntry in taskScreenInput.taskScreenUiState.timeEntries) {
             LazyRow {
@@ -186,11 +185,17 @@ fun TimeEntryRow(timeEntry: TimeEntryUi, navigateToTimeEditScreen: (Long) -> Uni
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Tag(tagTitle: String, removeTag: () -> Unit) {
-    InputChip(
-        selected = true, onClick = {
+fun Tag(tagUi: TagUi, removeTag: () -> Unit) {
+    InputChip(modifier = Modifier
+        .background(
+            tagUi.colour ?: androidx.compose.material3.MaterialTheme.colorScheme.background
+        )
+        .padding(start = 2.dp),
+        selected = true,
+        onClick = {
             removeTag()
         },
-        label = { Text(tagTitle) })
+        label = { Text(tagUi.title) },
+        trailingIcon = { Icons.Default.Close })
 
 }

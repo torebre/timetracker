@@ -1,5 +1,6 @@
 package com.kjipo.timetracker
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -34,9 +35,14 @@ class MainActivity : ComponentActivity() {
 
 
     private fun addTestData(appDatabase: AppDatabase) {
-        val tag = Tag(0, "Project 1").also { addTag(it, appDatabase) }
-        val tag2 = Tag(0, "Project 2").also { addTag(it, appDatabase) }
-        val tag3 = Tag(0, "Project 3").also { addTag(it, appDatabase) }
+        val converters = Converters()
+
+        val tag =
+            Tag(0, "Project 1", Color.valueOf(Color.RED)).also { addTag(it, appDatabase) }
+        val tag2 =
+            Tag(0, "Project 2", Color.valueOf(Color.GREEN)).also { addTag(it, appDatabase) }
+        val tag3 =
+            Tag(0, "Project 3", Color.valueOf(Color.BLUE)).also { addTag(it, appDatabase) }
 
         val task = Task(0, "Task 1").also { addTask(it, appDatabase) }
         val task2 = Task(0, "Task 2").also { addTask(it, appDatabase) }

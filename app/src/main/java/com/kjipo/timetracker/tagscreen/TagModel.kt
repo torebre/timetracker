@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.kjipo.timetracker.TaskRepository
 import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.tasklist.TaskListModel
+import com.kjipo.timetracker.taskscreen.TagUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,7 +48,10 @@ class TagModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     private fun loadTags() {
         viewModelScope.launch(Dispatchers.IO) {
-            viewModelState.update { it.copy(tags = taskRepository.getTags()) }
+            viewModelState.update { tagListUiState ->
+                tagListUiState.copy(
+                    tags = taskRepository.getTags().map { TagUi(it) })
+            }
         }
     }
 
@@ -68,4 +72,4 @@ class TagModel(private val taskRepository: TaskRepository) : ViewModel() {
 }
 
 
-data class TagListUiState(val tags: List<Tag> = emptyList())
+data class TagListUiState(val tags: List<TagUi> = emptyList())

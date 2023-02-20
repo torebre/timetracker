@@ -1,5 +1,6 @@
 package com.kjipo.timetracker.taskscreen
 
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -108,9 +109,11 @@ data class TimeEntryUi(
 }
 
 
-data class TagUi(val tagId: Long, val title: String) {
+data class TagUi(val tagId: Long, val title: String, val colour: Color?) {
 
-    constructor(tag: Tag) : this(tag.tagId, tag.title)
+    constructor(tag: Tag) : this(tag.tagId, tag.title, tag.colour?.let {
+        Color(it.red(), it.green(), it.blue())
+    })
 
 }
 

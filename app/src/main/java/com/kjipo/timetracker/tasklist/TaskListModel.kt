@@ -6,15 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.kjipo.timetracker.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
+import com.kjipo.timetracker.taskscreen.TagUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.time.Duration
-import java.time.Instant
 import java.time.Instant.now
 
 class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
@@ -78,7 +77,8 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         return TaskUi(task.task.taskId,
             task.task.title,
             sumTimeEntriesForTask(task),
-            task.timeEntries.any { it.stop == null })
+            task.timeEntries.any { it.stop == null },
+            tags = task.tags.map { TagUi(it) })
     }
 
     private fun sumTimeEntriesForTask(task: TaskWithTimeEntries): Duration {
@@ -109,4 +109,10 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 data class TaskListUiState(val tasks: List<TaskUi> = emptyList())
 
 
-data class TaskUi(val id: Long, val title: String, val duration: Duration, val ongoing: Boolean)
+data class TaskUi(
+    val id: Long,
+    val title: String,
+    val duration: Duration,
+    val ongoing: Boolean,
+    val tags: List<TagUi> = emptyList()
+)
