@@ -1,90 +1,85 @@
 package com.kjipo.timetracker.tagscreen
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.Button
 import androidx.compose.material.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.InputChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.dp
-import com.kjipo.timetracker.database.Tag
+import com.kjipo.timetracker.taglistscreen.TagScreenInputParameterProvider
 import com.kjipo.timetracker.taskscreen.TagUi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
 
-class TagScreenInputParameter(
-    val tagListUiState: StateFlow<TagListUiState>,
-    val insertTag: (String) -> Unit,
-    val updateTag: (Long, String) -> Unit
+class TagScreenInput(
+    val tagUi: TagScreenUiState,
+    val save: (tagUi: TagUi) -> Unit,
+    val deleteTag: () -> Unit
 )
 
-
-class TagScreenInputParameterProvider : PreviewParameterProvider<TagScreenInputParameter> {
-    override val values =
-        sequenceOf(
-            TagScreenInputParameter(
-                MutableStateFlow(
-                    TagListUiState(
-                        listOf(
-                            TagUi(1, "Tag1", Color.Red),
-                            TagUi(2, "Tag2", Color.Yellow),
-                            TagUi(3, "Tag3", Color.Green)
-                        )
-                    )
-                ),
-                { _ ->
-                    // Do nothing
-                },
-                { _, _ ->
-                    // Do nothing
-                })
-        )
-
-}
-
-@Composable
-fun TagScreen(tagModel: TagModel) {
-    TagScreen(
-        tagScreenInput = TagScreenInputParameter(
-            tagModel.uiState,
-            { title -> tagModel.insertTag(title) },
-            { id, title -> tagModel.updateTag(id, title) })
+class TagScreenParameterProvider : PreviewParameterProvider<TagScreenInput> {
+    override val values = sequenceOf(
+        TagScreenInput(TagScreenUiState(TagUi(1, "Test tag", Color.Green), false),
+            { tagUi ->
+                // Do nothing
+            }, {
+                // Do nothing
+            })
     )
 
 }
 
-@Preview
 @Composable
-fun TagScreen(@PreviewParameter(TagScreenInputParameterProvider::class) tagScreenInput: TagScreenInputParameter) {
-    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(items = tagScreenInput.tagListUiState.value.tags,
-            key = { tag ->
-                tag.tagId
+fun TagScreen(tagScreenModel: TagScreenModel, goToTagList: () -> Unit) {
+    val uiState = tagScreenModel.uiState.collectAsState()
+
+    if(uiState.value.loading) {
+        return
+    }
+
+    TagScreen(TagScreenInput(uiState.value, {
+        tagScreenModel.updateTag(it)
+    }, {
+        tagScreenModel.deleteTag()
+        goToTagList()
+    }))
+
+
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TagScreen(@PreviewParameter(TagScreenParameterProvider::class) tagScreenInput: TagScreenInput) {
+    val title = remember {
+        mutableStateOf(tagScreenInput.tagUi.tag.title)
+    }
+
+    Column {
+        Text(text = title.value)
+
+        Row {
+            Button(
+                onClick = {
+                    tagScreenInput.save(tagScreenInput.tagUi.tag.copy(title = title.value))
+                },
+                enabled = title.value != tagScreenInput.tagUi.tag.title
+            ) {
+                Text("Save")
+            }
+
+            Button(onClick = {
+                tagScreenInput.deleteTag()
             }) {
-            TagRow(it)
+                Text("Delete")
+            }
+
         }
     }
 
-}
 
-@Composable
-fun TagRow(tagUi: TagUi) {
-    Text(
-        modifier = Modifier.background(tagUi.colour ?: MaterialTheme.colorScheme.background),
-        text = tagUi.title
-    )
 }

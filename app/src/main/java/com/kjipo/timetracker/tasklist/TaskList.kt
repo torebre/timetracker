@@ -178,7 +178,7 @@ fun Tag(tagUi: TagUi) {
         .background(
             tagUi.colour ?: MaterialTheme.colorScheme.background
         )
-        .padding(start = 2.dp),
+        .padding(1.dp),
         onClick = {
                   // Do nothing
         },

@@ -28,14 +28,14 @@ fun TimeTrackerApp(appContainer: AppContainer) {
 fun rememberTimeTrackerAppState(
     scaffoldState: ScaffoldState = rememberScaffoldState(),
     navController: NavHostController = rememberNavController(),
-    taskScreenShowing: MutableState<Boolean> = remember {
-        mutableStateOf(true)
+    screenshowing: MutableState<Screens?> = remember {
+        mutableStateOf(null)
     }
 ) = remember(scaffoldState) {
     TimeTrackerAppState(
         scaffoldState,
         navController,
-        taskScreenShowing
+        screenshowing
     )
 }
 
@@ -43,7 +43,7 @@ fun rememberTimeTrackerAppState(
 class TimeTrackerAppState(
     val scaffoldState: ScaffoldState,
     val navController: NavHostController,
-    val taskScreenShowing: MutableState<Boolean>
+    val screenshowing: MutableState<Screens?>
 ) {
 
     val currentRoute: String?
@@ -55,14 +55,18 @@ class TimeTrackerAppState(
 
             // TODO Is this a good way to handle the route to the task screen?
             navController.navigate(route) {
-                taskScreenShowing.value = route.startsWith(Screens.TASK.name)
+                screenshowing.value = Screens.values().filter {
+                    route.startsWith(it.name)
+                }.first()
 
                 launchSingleTop = true
-                restoreState = !route.startsWith(Screens.TASK.name)
+                restoreState =
+                    !route.startsWith(Screens.TASK.name) && !route.startsWith(Screens.TAG.name)
                 // Pop up backstack to the first destination and save state. This makes going back
                 // to the start destination when pressing back in any other bottom tab.
                 popUpTo(findStartDestination(navController.graph).id) {
-                    saveState = !route.startsWith(Screens.TASK.name)
+                    saveState =
+                        !route.startsWith(Screens.TASK.name) && !route.startsWith(Screens.TAG.name)
                 }
             }
         }

@@ -13,9 +13,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.kjipo.timetracker.tagscreen.TagModel
+import com.kjipo.timetracker.taglistscreen.TagModel
+import com.kjipo.timetracker.taglistscreen.TagListScreen
 import com.kjipo.timetracker.tagscreen.TagScreen
-import com.kjipo.timetracker.tagscreen.TagScreenInputParameter
+import com.kjipo.timetracker.tagscreen.TagScreenModel
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
 import com.kjipo.timetracker.taskscreen.TaskScreen
@@ -24,7 +25,6 @@ import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,9 +39,13 @@ fun TimeTrackerScaffold(
             TimeTrackerBottomBar(appState::navigateToScreen)
         },
         floatingActionButton = {
-            AddTaskButton(appState.taskScreenShowing) {
-                appState.navigateToScreen("${Screens.TASK.name}/0")
-            }
+            AddTaskButton(appState.screenshowing,
+                {
+                    appState.navigateToScreen("${Screens.TASK.name}/0")
+                },
+                {
+                    appState.navigateToScreen("${Screens.TAG.name}/0")
+                })
         }
 
     ) { paddingValues ->
@@ -56,8 +60,6 @@ fun TimeTrackerScaffold(
                         appContainer.taskRepository
                     )
                 )
-
-                Timber.tag("Navigation").i("Creating new TaskList. Model: ${taskListModel}")
                 taskListModel.refresh()
 
                 TaskList(taskListModel, { taskId ->
@@ -95,7 +97,7 @@ fun TimeTrackerScaffold(
                     },
                         { timeEntryId ->
                             appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
-                        }, {tagId ->
+                        }, { tagId ->
                             taskScreenModel.removeTag(tagId)
                         })
                 }
@@ -140,12 +142,35 @@ fun TimeTrackerScaffold(
 
             composable(Screens.TAGS.name) { navBackStackEntry ->
                 val tagModel: TagModel = viewModel(
-                    factory =  TagModel.provideFactory(
+                    factory = TagModel.provideFactory(
                         appContainer.taskRepository
                     )
                 )
-                
-                TagScreen(tagModel)
+
+                tagModel.loadTags()
+
+                TagListScreen(tagModel) {
+                    appState.navigateToScreen("${Screens.TAG.name}/${it}")
+                }
+            }
+
+            composable(
+                "${Screens.TAG.name}/{tagId}",
+                arguments = listOf(navArgument("tagId") {
+                    type = NavType.LongType
+                })
+            ) { navBackStackEntry ->
+                val tagModel: TagScreenModel = viewModel(
+                    factory = TagScreenModel.provideFactory(
+                        appContainer.taskRepository
+                    )
+                )
+                navBackStackEntry.arguments?.getLong("tagId")?.let {
+                    tagModel.setCurrentTag(it)
+                }
+                TagScreen(tagModel) {
+                    appState.navigateToScreen(Screens.TAGS.name)
+                }
             }
         }
     }
@@ -180,19 +205,38 @@ fun TimeTrackerBottomBar(
 }
 
 @Composable
-fun AddTaskButton(taskScreenShowing: MutableState<Boolean>, addTask: () -> Unit) {
-    if (taskScreenShowing.value) {
-        FloatingActionButton(
-            onClick = addTask,
-            modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        ) {
-            Icon(
-                imageVector = Icons.Default.AddCircle,
-                contentDescription = "Add task",
-                modifier = Modifier.size(18.dp)
-            )
+fun AddTaskButton(
+    taskScreenShowing: MutableState<Screens?>,
+    addTask: () -> Unit,
+    addTag: () -> Unit
+) {
+    when (taskScreenShowing.value) {
+        Screens.TASK -> {
+            FloatingAddButton(contentScription = "Add task", onClickHandler = addTask)
+        }
+        Screens.TAG -> {
+            FloatingAddButton(contentScription = "Add tag", onClickHandler = addTag)
+        }
+        else -> {
+            // Do not add a floating button
         }
     }
+}
+
+
+@Composable
+fun FloatingAddButton(contentScription: String, onClickHandler: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClickHandler,
+        modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
+        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+    ) {
+        Icon(
+            imageVector = Icons.Default.AddCircle,
+            contentDescription = contentScription,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+
 }

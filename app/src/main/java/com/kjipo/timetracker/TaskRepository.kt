@@ -13,6 +13,9 @@ interface TaskRepository {
     suspend fun createTask(title: String = ""): Task
 
     suspend fun updateTask(task: Task)
+
+    suspend fun deleteTask(task: Task)
+
     suspend fun getTasksWithTimeEntries(): List<TaskWithTimeEntries>
 
     suspend fun addTimeEntry(timeEntry: TimeEntry)
@@ -26,8 +29,12 @@ interface TaskRepository {
 
     suspend fun getTags(): List<Tag>
 
+    suspend fun getTag(id: Long): Tag?
+
     suspend fun insertTag(tag: Tag): Long
     suspend fun updateTag(tag: Tag)
+
+    suspend fun deleteTag(tag: Tag)
 
     suspend fun removeTag(taskId: Long, tagId: Long)
 
@@ -53,6 +60,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun updateTask(task: Task) {
         appDatabase.taskDao().updateTask(task)
+    }
+
+    override suspend fun deleteTask(task: Task) {
+        appDatabase.taskDao().deleteTask(task)
     }
 
     override suspend fun getTasksWithTimeEntries(): List<TaskWithTimeEntries> {
@@ -88,12 +99,20 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         return appDatabase.tagDao().getTags()
     }
 
+    override suspend fun getTag(id: Long): Tag? {
+        return appDatabase.tagDao().getTag(id)
+    }
+
     override suspend fun insertTag(tag: Tag): Long {
         return appDatabase.tagDao().insertTag(tag)
     }
 
     override suspend fun updateTag(tag: Tag) {
         appDatabase.tagDao().updateTag(tag)
+    }
+
+    override suspend fun deleteTag(tag: Tag) {
+        appDatabase.tagDao().deleteTag(tag)
     }
 
     override suspend fun removeTag(taskId: Long, tagId: Long) {

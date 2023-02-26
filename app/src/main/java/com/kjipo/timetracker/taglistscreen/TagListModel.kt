@@ -1,11 +1,10 @@
-package com.kjipo.timetracker.tagscreen
+package com.kjipo.timetracker.taglistscreen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.kjipo.timetracker.TaskRepository
 import com.kjipo.timetracker.database.Tag
-import com.kjipo.timetracker.tasklist.TaskListModel
 import com.kjipo.timetracker.taskscreen.TagUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +45,7 @@ class TagModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
 
-    private fun loadTags() {
+    fun loadTags() {
         viewModelScope.launch(Dispatchers.IO) {
             viewModelState.update { tagListUiState ->
                 tagListUiState.copy(

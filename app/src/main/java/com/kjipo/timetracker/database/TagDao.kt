@@ -21,4 +21,7 @@ interface TagDao {
     @Query("SELECT * FROM tag WHERE tag.tagId = :tagId")
     fun getTasksForTag(tagId: Long): List<TagWithTaskEntries>
 
+    @Query("SELECT * FROM tag WHERE tag.tagId = :id")
+    fun getTag(id: Long): Tag?
+
 }
