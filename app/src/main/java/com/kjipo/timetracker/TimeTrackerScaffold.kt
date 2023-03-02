@@ -99,6 +99,9 @@ fun TimeTrackerScaffold(
                             appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
                         }, { tagId ->
                             taskScreenModel.removeTag(tagId)
+                        }, {
+                            tagId ->
+                            taskScreenModel.addTag(tagId)
                         })
                 }
             }
@@ -212,10 +215,10 @@ fun AddTaskButton(
 ) {
     when (taskScreenShowing.value) {
         Screens.TASK -> {
-            FloatingAddButton(contentScription = "Add task", onClickHandler = addTask)
+            FloatingAddButton(contentDescription = "Add task", onClickHandler = addTask)
         }
-        Screens.TAG -> {
-            FloatingAddButton(contentScription = "Add tag", onClickHandler = addTag)
+        Screens.TAGS -> {
+            FloatingAddButton(contentDescription = "Add tag", onClickHandler = addTag)
         }
         else -> {
             // Do not add a floating button
@@ -225,7 +228,7 @@ fun AddTaskButton(
 
 
 @Composable
-fun FloatingAddButton(contentScription: String, onClickHandler: () -> Unit) {
+fun FloatingAddButton(contentDescription: String, onClickHandler: () -> Unit) {
     FloatingActionButton(
         onClick = onClickHandler,
         modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
@@ -234,7 +237,7 @@ fun FloatingAddButton(contentScription: String, onClickHandler: () -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.AddCircle,
-            contentDescription = contentScription,
+            contentDescription = contentDescription,
             modifier = Modifier.size(18.dp)
         )
     }

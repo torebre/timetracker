@@ -11,10 +11,11 @@ import com.kjipo.timetracker.database.TimeEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.time.Instant
 
 
-class TaskScreenModel(private var taskId: Long, private val taskRepository: TaskRepository) :
+class TaskScreenModel(@Volatile private var taskId: Long, private val taskRepository: TaskRepository) :
     ViewModel() {
 
     private val viewModelState = MutableStateFlow(TaskScreenUiState())
@@ -49,13 +50,28 @@ class TaskScreenModel(private var taskId: Long, private val taskRepository: Task
     }
 
     private suspend fun loadTask() {
+
+        taskRepository.getTags().forEach { tag ->
+           taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
+               Timber.tag("TaskScreenModel").i("Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")}")
+           }
+        }
+
         taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
+            val tagIds = taskWithTimeEntries.tags.map { it.tagId }
+            val availableTags = taskRepository.getTags()
+                .filter { !tagIds.contains(it.tagId) }
+                .map { TagUi(it) }
+
+            Timber.tag("TaskScreenModel").i("Tags: ${tagIds}")
+
             viewModelState.update { taskScreenUiState ->
                 taskScreenUiState.copy(
                     taskUi = TaskUi(taskWithTimeEntries),
                     timeEntries = taskWithTimeEntries.timeEntries.map { TimeEntryUi(it) },
                     tags = taskWithTimeEntries.tags.map { TagUi(it) },
-                    initialLoading = false
+                    initialLoading = false,
+                    availableTags = availableTags
                 )
             }
         }
@@ -69,6 +85,16 @@ class TaskScreenModel(private var taskId: Long, private val taskRepository: Task
 
     }
 
+    fun addTag(tagId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+           taskRepository.addTag(taskId, tagId)
+
+            Timber.tag("TaskScreenModel").i("Test30")
+
+            loadTask()
+        }
+    }
+
     companion object {
 
         fun provideFactory(
@@ -76,8 +102,7 @@ class TaskScreenModel(private var taskId: Long, private val taskRepository: Task
             taskRepository: TaskRepository
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return TaskScreenModel(taskId, taskRepository) as T
                 }
             }
@@ -122,5 +147,6 @@ data class TaskScreenUiState(
     val taskUi: TaskUi = TaskUi(),
     val timeEntries: List<TimeEntryUi> = emptyList(),
     val tags: List<TagUi> = emptyList(),
-    val initialLoading: Boolean = true
+    val initialLoading: Boolean = true,
+    val availableTags: List<TagUi> = emptyList()
 )

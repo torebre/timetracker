@@ -31,15 +31,18 @@ class TagScreenModel(private val taskRepository: TaskRepository) : ViewModel() {
 
 
     fun setCurrentTag(id: Long) {
-
         Timber.tag("TagScreen").i("Setting current tag: $id")
+
+        if (id == 0L) {
+            // This means a new tag should be created
+            viewModelState.update { it.copy(loading = false) }
+            return
+        }
 
         viewModelState.update { it.copy(loading = true) }
         viewModelScope.launch(Dispatchers.IO) {
             currentTag = taskRepository.getTag(id)
         }
-
-        Timber.tag("TagScreen").i("Current tag: ${currentTag}")
 
         currentTag?.let {
             viewModelState.update { tagListUiState ->
@@ -52,19 +55,16 @@ class TagScreenModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     fun updateTag(tagUi: TagUi) {
-        val tag = currentTag
         viewModelScope.launch(Dispatchers.IO) {
-            currentTag =
-                tag?.copy(title = tagUi.title, colour = tagUi.colour?.toAndroidGraphicsColor())
-                    ?: taskRepository.insertTag(
-                        Tag(
-                            0,
-                            tagUi.title,
-                            tagUi.colour?.toAndroidGraphicsColor()
-                        )
-                    ).let { newTagId ->
-                        taskRepository.getTag(newTagId)
-                    }
+            val tag = currentTag
+            currentTag = if (tag == null) {
+                Tag(title = tagUi.title, colour = tagUi.colour?.toAndroidGraphicsColor()).apply {
+                    taskRepository.insertTag(this).also { this.tagId = it }
+                }
+            } else {
+                tag.copy(title = tagUi.title, colour = tagUi.colour?.toAndroidGraphicsColor())
+                    .also { taskRepository.updateTag(it) }
+            }
         }
     }
 

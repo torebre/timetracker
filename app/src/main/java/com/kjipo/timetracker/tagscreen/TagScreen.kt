@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material.Button
 import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +61,9 @@ fun TagScreen(@PreviewParameter(TagScreenParameterProvider::class) tagScreenInpu
     }
 
     Column {
-        Text(text = title.value)
+        TextField(value = title.value, onValueChange = {
+            title.value = it
+        })
 
         Row {
             Button(
