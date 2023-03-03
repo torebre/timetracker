@@ -118,26 +118,22 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         mutableStateOf(taskScreenInput.taskScreenUiState.value.taskUi.taskName)
     }
 
-    val tags = remember {
-       mutableStateOf(taskScreenInput.taskScreenUiState.value.tags)
-    }
-
     val expanded = remember {
         mutableStateOf(false)
     }
-
 
     Column {
         Row {
             TextField(
                 value = inputText.value,
                 onValueChange = { inputText.value = it },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.h4
             )
         }
 
         Row {
-            tags.value.forEach { tagUi ->
+            taskScreenInput.taskScreenUiState.value.tags.forEach { tagUi ->
                 Tag(tagUi) {
                     taskScreenInput.removeTag(tagUi.tagId)
                 }
@@ -159,7 +155,6 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 },
             expanded)
         }
-
 
         for (timeEntry in taskScreenInput.taskScreenUiState.value.timeEntries) {
             LazyRow {

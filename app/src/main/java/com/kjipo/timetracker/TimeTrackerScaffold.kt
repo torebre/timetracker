@@ -214,7 +214,7 @@ fun AddTaskButton(
     addTag: () -> Unit
 ) {
     when (taskScreenShowing.value) {
-        Screens.TASK -> {
+        Screens.TASKS -> {
             FloatingAddButton(contentDescription = "Add task", onClickHandler = addTask)
         }
         Screens.TAGS -> {

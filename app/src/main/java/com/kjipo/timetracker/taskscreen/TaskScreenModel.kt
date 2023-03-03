@@ -50,7 +50,6 @@ class TaskScreenModel(@Volatile private var taskId: Long, private val taskReposi
     }
 
     private suspend fun loadTask() {
-
         taskRepository.getTags().forEach { tag ->
            taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
                Timber.tag("TaskScreenModel").i("Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")}")

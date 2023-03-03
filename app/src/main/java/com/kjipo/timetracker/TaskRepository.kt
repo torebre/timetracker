@@ -119,11 +119,11 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
     }
 
     override suspend fun addTag(taskId: Long, tagId: Long) {
-        appDatabase.taskDao().insertTaskAndTagCrossRef(TagTasksCrossRef(taskId, tagId))
+        appDatabase.taskDao().insertTaskAndTagCrossRef(TagTasksCrossRef(tagId, taskId))
     }
 
     override suspend fun removeTag(taskId: Long, tagId: Long) {
-        appDatabase.taskDao().removeTaskAndTagCrossRef(TagTasksCrossRef(taskId, tagId))
+        appDatabase.taskDao().removeTaskAndTagCrossRef(TagTasksCrossRef(tagId, taskId))
     }
 
     override suspend fun getTasksForTag(tagId: Long): List<TagWithTaskEntries> {
