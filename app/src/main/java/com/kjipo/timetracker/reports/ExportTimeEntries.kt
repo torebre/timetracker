@@ -3,8 +3,11 @@ package com.kjipo.timetracker.reports
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import com.kjipo.timetracker.R
 import java.io.File
 
+
+class ExportTimeEntryDataFileProvider: FileProvider(R.xml.export_files_path)
 
 fun exportData(file: File, context: Context) {
     val fileUri = FileProvider.getUriForFile(context, "com.kjipo.timetracker", file)
