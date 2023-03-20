@@ -10,7 +10,7 @@ interface TaskRepository {
     suspend fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries?
     suspend fun getTasks(): List<Task>
 
-    suspend fun createTask(title: String = ""): Task
+    suspend fun createTask(title: String = "", tags: List<Tag> = emptyList()): Task
 
     suspend fun updateTask(task: Task)
 
@@ -25,7 +25,7 @@ interface TaskRepository {
     suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
 
     suspend fun updateTimeEntry(timeEntry: TimeEntry)
-    suspend fun saveTask(taskId: Long, taskName: String)
+    suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>)
 
     suspend fun getTags(): List<Tag>
 
@@ -54,9 +54,13 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         return appDatabase.taskDao().getTasks()
     }
 
-    override suspend fun createTask(title: String): Task {
+    @Transaction
+    override suspend fun createTask(title: String, tags: List<Tag>): Task {
         val newTask = Task(0, title)
         appDatabase.taskDao().insertTask(newTask).also { newTask.taskId = it }
+        for (tag in tags) {
+            addTag(newTask.taskId, tag.tagId)
+        }
 
         return newTask
     }
@@ -92,9 +96,21 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
     }
 
     @Transaction
-    override suspend fun saveTask(taskId: Long, taskName: String) {
-        appDatabase.taskDao().getTask(taskId)?.let { task ->
-            appDatabase.taskDao().updateTask(task.copy(title = taskName))
+    override suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>) {
+        appDatabase.taskDao().getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
+            appDatabase.taskDao().updateTask(taskWithTimeEntries.task.copy(title = taskName))
+
+            val tagsToRemove = taskWithTimeEntries.tags.filter { !tagIds.contains(it.tagId) }
+            tagsToRemove.forEach { tag ->
+                appDatabase.taskDao().removeTaskAndTagCrossRef(TagTasksCrossRef(tag.tagId, taskId))
+            }
+
+            val existingTags = taskWithTimeEntries.tags.map { it.tagId }.toSet()
+            tagIds.forEach { tagId ->
+                if (!existingTags.contains(tagId)) {
+                    appDatabase.taskDao().insertTaskAndTagCrossRef(TagTasksCrossRef(tagId, taskId))
+                }
+            }
         }
     }
 

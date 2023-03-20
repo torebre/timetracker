@@ -8,6 +8,7 @@ import com.kjipo.timetracker.TaskRepository
 import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
+import com.kjipo.timetracker.tagscreen.toAndroidGraphicsColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -15,7 +16,10 @@ import timber.log.Timber
 import java.time.Instant
 
 
-class TaskScreenModel(@Volatile private var taskId: Long, private val taskRepository: TaskRepository) :
+class TaskScreenModel(
+    @Volatile private var taskId: Long,
+    private val taskRepository: TaskRepository
+) :
     ViewModel() {
 
     private val viewModelState = MutableStateFlow(TaskScreenUiState())
@@ -29,21 +33,33 @@ class TaskScreenModel(@Volatile private var taskId: Long, private val taskReposi
 
     init {
         if (taskId != 0L) {
+            // The tasks already exists, load the data for it
             viewModelScope.launch(Dispatchers.IO) {
                 loadTask()
             }
         } else {
-            viewModelState.update { it.copy(initialLoading = false) }
+            // The task does not exist yet
+            viewModelScope.launch(Dispatchers.IO) {
+                // All tags are available for selection when the task is new
+                val availableTags = taskRepository.getTags()
+                    .map { TagUi(it) }
+                viewModelState.update {
+                    it.copy(
+                        initialLoading = false,
+                        availableTags = availableTags
+                    )
+                }
+            }
         }
     }
 
 
-    fun saveTask(taskName: String) {
+    fun saveTask(taskName: String, tags: List<TagUi>) {
         viewModelScope.launch(Dispatchers.IO) {
             if (taskId == 0L) {
-                taskId = taskRepository.createTask().taskId
+                taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }).taskId
             } else {
-                taskRepository.saveTask(taskId, taskName)
+                taskRepository.saveTask(taskId, taskName, tags.map { it.tagId })
             }
             loadTask()
         }
@@ -51,9 +67,13 @@ class TaskScreenModel(@Volatile private var taskId: Long, private val taskReposi
 
     private suspend fun loadTask() {
         taskRepository.getTags().forEach { tag ->
-           taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
-               Timber.tag("TaskScreenModel").i("Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")}")
-           }
+            taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
+                Timber.tag("TaskScreenModel").i(
+                    "Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${
+                        tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")
+                    }"
+                )
+            }
         }
 
         taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
@@ -86,10 +106,7 @@ class TaskScreenModel(@Volatile private var taskId: Long, private val taskReposi
 
     fun addTag(tagId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
-           taskRepository.addTag(taskId, tagId)
-
-            Timber.tag("TaskScreenModel").i("Test30")
-
+            taskRepository.addTag(taskId, tagId)
             loadTask()
         }
     }
@@ -101,7 +118,8 @@ class TaskScreenModel(@Volatile private var taskId: Long, private val taskReposi
             taskRepository: TaskRepository
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     return TaskScreenModel(taskId, taskRepository) as T
                 }
             }
@@ -138,6 +156,8 @@ data class TagUi(val tagId: Long, val title: String, val colour: Color?) {
     constructor(tag: Tag) : this(tag.tagId, tag.title, tag.colour?.let {
         Color(it.red(), it.green(), it.blue())
     })
+
+    fun toTag() = Tag(tagId = tagId, title = title, colour = colour?.toAndroidGraphicsColor())
 
 }
 

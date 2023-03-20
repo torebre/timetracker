@@ -92,16 +92,11 @@ fun TimeTrackerScaffold(
                         )
                     )
 
-                    TaskScreen(taskScreenModel, { title ->
-                        taskScreenModel.saveTask(title)
+                    TaskScreen(taskScreenModel, { title, tags ->
+                        taskScreenModel.saveTask(title, tags)
                     },
                         { timeEntryId ->
                             appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
-                        }, { tagId ->
-                            taskScreenModel.removeTag(tagId)
-                        }, {
-                            tagId ->
-                            taskScreenModel.addTag(tagId)
                         })
                 }
             }

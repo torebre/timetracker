@@ -31,41 +31,36 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
     override val values = sequenceOf(
         TaskScreenInput(
             mutableStateOf(
-            TaskScreenUiState(
-                TaskUi(
-                    1,
-                    "Task name"
-                ),
-                listOf(
-                    TimeEntryUi(
+                TaskScreenUiState(
+                    TaskUi(
                         1,
-                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                            ZoneOffset.UTC
-                        ),
-                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                            ZoneOffset.UTC
-                        )
+                        "Task name"
                     ),
-                    TimeEntryUi(
-                        2,
-                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                            ZoneOffset.UTC
+                    listOf(
+                        TimeEntryUi(
+                            1,
+                            LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                                ZoneOffset.UTC
+                            ),
+                            LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                                ZoneOffset.UTC
+                            )
                         ),
-                        LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                            ZoneOffset.UTC
+                        TimeEntryUi(
+                            2,
+                            LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                                ZoneOffset.UTC
+                            ),
+                            LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                                ZoneOffset.UTC
+                            )
                         )
                     )
                 )
-            )),
-            {
+            ),
+            { taskName, tags ->
                 // Do nothing
             },
-            {
-                // Do nothing
-            },
-            {
-                // Do nothing
-            }
         ) {
             // Do nothing
         }
@@ -77,19 +72,15 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 
 class TaskScreenInput(
     val taskScreenUiState: State<TaskScreenUiState>,
-    val saveData: (String) -> Unit,
-    val navigateToTimeEditScreen: (Long) -> Unit,
-    val removeTag: (Long) -> Unit,
-    val addTag: (Long) -> Unit
+    val saveData: (String, List<TagUi>) -> Unit,
+    val navigateToTimeEditScreen: (Long) -> Unit
 )
 
 @Composable
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
-    saveTask: (String) -> Unit,
-    navigateToTimeEditScreen: (Long) -> Unit,
-    removeTag: (Long) -> Unit,
-    addTag: (Long) -> Unit
+    saveTask: (String, List<TagUi>) -> Unit,
+    navigateToTimeEditScreen: (Long) -> Unit
 ) {
     val uiState = taskScreenModel.uiState.collectAsState()
 
@@ -98,8 +89,6 @@ fun TaskScreen(
             uiState,
             saveTask,
             navigateToTimeEditScreen,
-            removeTag,
-            addTag
         )
     )
 }
@@ -108,14 +97,24 @@ fun TaskScreen(
 @Preview
 @Composable
 fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenInput: TaskScreenInput) {
-    if (taskScreenInput.taskScreenUiState.value.initialLoading) {
+    val taskUiState = taskScreenInput.taskScreenUiState.value
+
+    if (taskUiState.initialLoading) {
         return
     }
 
-    Timber.tag("TaskScreen").i("${taskScreenInput.taskScreenUiState.value.tags}")
+    Timber.tag("TaskScreen").i("${taskUiState.tags}")
 
     val inputText = remember {
-        mutableStateOf(taskScreenInput.taskScreenUiState.value.taskUi.taskName)
+        mutableStateOf(taskUiState.taskUi.taskName)
+    }
+
+    val availableTags = remember {
+        mutableStateOf(taskUiState.availableTags)
+    }
+
+    val usedTags = remember {
+        mutableStateOf(taskUiState.tags)
     }
 
     val expanded = remember {
@@ -133,30 +132,35 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         }
 
         Row {
-            taskScreenInput.taskScreenUiState.value.tags.forEach { tagUi ->
+            usedTags.value.forEach { tagUi ->
                 Tag(tagUi) {
-                    taskScreenInput.removeTag(tagUi.tagId)
+                    usedTags.value -= tagUi
+                    availableTags.value += tagUi
                 }
             }
         }
 
-        Button(onClick = {
-            expanded.value = !expanded.value
-        }) {
+        Button(
+            onClick = {
+                expanded.value = !expanded.value
+            },
+            enabled = taskUiState.availableTags.isNotEmpty()
+        ) {
             Text("Add tag")
         }
 
         if (expanded.value) {
             TagSelectionMenu(
-                availableTags = taskScreenInput.taskScreenUiState.value.availableTags,
-                addTag = {
-                    taskScreenInput.addTag(it)
+                availableTags = taskUiState.availableTags,
+                addTag = { tagUi ->
+                    usedTags.value += tagUi
                     expanded.value = false
                 },
-            expanded)
+                expanded
+            )
         }
 
-        for (timeEntry in taskScreenInput.taskScreenUiState.value.timeEntries) {
+        for (timeEntry in taskUiState.timeEntries) {
             LazyRow {
                 item {
                     TimeEntryRow(timeEntry, taskScreenInput.navigateToTimeEditScreen)
@@ -170,9 +174,9 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         ) {
             Button(
                 onClick = {
-                    taskScreenInput.saveData(inputText.value)
+                    taskScreenInput.saveData(inputText.value, usedTags.value)
                 },
-                enabled = inputText.value != taskScreenInput.taskScreenUiState.value.taskUi.taskName
+                enabled = inputText.value.isNotBlank() && (inputText.value != taskUiState.taskUi.taskName || !usedTags.value.containsAll(taskUiState.tags) || !taskUiState.tags.containsAll(usedTags.value))
             ) {
                 Text("Save")
             }
@@ -181,6 +185,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
     }
 
 }
+
 
 
 @Composable
@@ -240,7 +245,7 @@ fun Tag(tagUi: TagUi, removeTag: () -> Unit) {
 @Composable
 fun TagSelectionMenu(
     availableTags: List<TagUi>,
-    addTag: (Long) -> Unit,
+    addTag: (TagUi) -> Unit,
     expanded: MutableState<Boolean>
 ) {
     Box(
@@ -254,7 +259,7 @@ fun TagSelectionMenu(
                     Text(tagUi.title)
                 },
                     onClick = {
-                        addTag(tagUi.tagId)
+                        addTag(tagUi)
                     })
 
             }
