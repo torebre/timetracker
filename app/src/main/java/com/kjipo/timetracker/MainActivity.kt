@@ -20,12 +20,13 @@ class MainActivity : ComponentActivity() {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
-        }
 
-        // TODO Only here while developing
-        lifecycleScope.launch(Dispatchers.IO) {
-            appContainer.appDatabase.clearAllTables()
-            addTestData(appContainer.appDatabase)
+            // Add some test data when running in debug, which probably
+            // indicates it is being run as part of development
+            lifecycleScope.launch(Dispatchers.IO) {
+                appContainer.appDatabase.clearAllTables()
+                addTestData(appContainer.appDatabase)
+            }
         }
 
         setContent {
