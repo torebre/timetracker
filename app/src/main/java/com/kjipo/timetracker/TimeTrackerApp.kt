@@ -29,7 +29,8 @@ fun rememberTimeTrackerAppState(
     scaffoldState: ScaffoldState = rememberScaffoldState(),
     navController: NavHostController = rememberNavController(),
     screenshowing: MutableState<Screens?> = remember {
-        mutableStateOf(null)
+        // The tasks screen is the default screen
+        mutableStateOf(Screens.TASKS)
     }
 ) = remember(scaffoldState) {
     TimeTrackerAppState(
