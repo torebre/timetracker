@@ -4,7 +4,17 @@ plugins {
     id 'com.google.devtools.ksp'
 }
 
+def userHome = System.properties['user.home']
+
 android {
+    signingConfigs {
+        release {
+            storeFile file("${userHome}/keystores/upload-keystore.jks")
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias 'upload'
+            keyPassword System.getenv("KEY_PASSWORD")
+        }
+    }
     namespace 'com.kjipo.timetracker'
     compileSdk 33
 
@@ -12,8 +22,8 @@ android {
         applicationId "com.kjipo.timetracker"
         minSdk 29
         targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
