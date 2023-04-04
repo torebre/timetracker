@@ -13,14 +13,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.kjipo.timetracker.taglistscreen.TagScreenInputParameterProvider
 import com.kjipo.timetracker.taskscreen.TagUi
 
 
 class TagScreenInput(
     val tagUi: TagScreenUiState,
     val save: (tagUi: TagUi) -> Unit,
-    val deleteTag: () -> Unit
+    val deleteTag: () -> Unit,
+    val navigateToTagList: () -> Unit
 )
 
 class TagScreenParameterProvider : PreviewParameterProvider<TagScreenInput> {
@@ -30,13 +30,15 @@ class TagScreenParameterProvider : PreviewParameterProvider<TagScreenInput> {
                 // Do nothing
             }, {
                 // Do nothing
+            }, {
+                // Do nothing
             })
     )
 
 }
 
 @Composable
-fun TagScreen(tagScreenModel: TagScreenModel, goToTagList: () -> Unit) {
+fun TagScreen(tagScreenModel: TagScreenModel, navigateToTagList: () -> Unit) {
     val uiState = tagScreenModel.uiState.collectAsState()
 
     if(uiState.value.loading) {
@@ -47,8 +49,7 @@ fun TagScreen(tagScreenModel: TagScreenModel, goToTagList: () -> Unit) {
         tagScreenModel.updateTag(it)
     }, {
         tagScreenModel.deleteTag()
-        goToTagList()
-    }))
+    }, navigateToTagList))
 
 
 }
@@ -69,16 +70,28 @@ fun TagScreen(@PreviewParameter(TagScreenParameterProvider::class) tagScreenInpu
             Button(
                 onClick = {
                     tagScreenInput.save(tagScreenInput.tagUi.tag.copy(title = title.value))
+                    tagScreenInput.navigateToTagList()
                 },
                 enabled = title.value != tagScreenInput.tagUi.tag.title
             ) {
                 Text("Save")
             }
 
+            val isNewTag = tagScreenInput.tagUi.tag.tagId == 0L
             Button(onClick = {
-                tagScreenInput.deleteTag()
+                // Nothing to delete if the tag is new
+                if(!isNewTag) {
+                    tagScreenInput.deleteTag()
+                }
+                tagScreenInput.navigateToTagList()
             }) {
-                Text("Delete")
+                // If the ID is 0 then this a new tag
+                if(isNewTag) {
+                   Text("Cancel")
+                }
+                else {
+                    Text("Delete")
+                }
             }
 
         }

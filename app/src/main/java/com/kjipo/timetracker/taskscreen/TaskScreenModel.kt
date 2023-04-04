@@ -111,6 +111,13 @@ class TaskScreenModel(
         }
     }
 
+    fun deleteTimeEntry(timeEntryId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepository.deleteTimeEntry(timeEntryId)
+            loadTask()
+        }
+    }
+
     companion object {
 
         fun provideFactory(

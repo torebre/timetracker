@@ -97,6 +97,9 @@ fun TimeTrackerScaffold(
                     },
                         { timeEntryId ->
                             appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
+                        },
+                        {timeEntryId ->
+                            taskScreenModel.deleteTimeEntry(timeEntryId)
                         })
                 }
             }
