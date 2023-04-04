@@ -1,5 +1,6 @@
 package com.kjipo.timetracker.reports
 
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.kjipo.timetracker.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import java.time.Duration
 import java.time.LocalDateTime
 
 
@@ -34,8 +36,12 @@ class ReportsModel(private val taskRepository: TaskRepository): ViewModel() {
     }
 
 
+    data class PieChartEntry(val tagId: Long, val percentage: Int, val colour: Color)
+    data class PieChartData(val pieChartEntries: List<PieChartEntry>)
+
     data class ReportsUiState(val startTime: LocalDateTime? = null,
-                              val stopTime: LocalDateTime? = null)
+                              val stopTime: LocalDateTime? = null,
+    val pieChartData: PieChartData? = null)
 
 
 }
