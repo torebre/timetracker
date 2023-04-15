@@ -8,8 +8,7 @@ import com.kjipo.timetracker.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import java.time.Duration
-import java.time.LocalDateTime
+import java.time.*
 
 
 class ReportsModel(private val taskRepository: TaskRepository): ViewModel() {
@@ -45,3 +44,8 @@ class ReportsModel(private val taskRepository: TaskRepository): ViewModel() {
 
 
 }
+
+data class CalendarUiState(val year: Year = Year.now(),
+                           val month: Month = LocalDate.now().month,
+                           val startTime: LocalDateTime? = null,
+                           val stopTime: LocalDateTime? = null)
