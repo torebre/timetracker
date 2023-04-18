@@ -1,9 +1,10 @@
 package com.kjipo.timetracker.database
 
-import androidx.compose.ui.graphics.Color
 import androidx.room.*
 import androidx.room.ForeignKey.Companion.CASCADE
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 
 @Entity(
     foreignKeys = [ForeignKey(
@@ -19,6 +20,22 @@ data class TimeEntry(
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     var start: Instant,
     var stop: Instant? = null
+)
+
+
+@Entity(
+    foreignKeys = [ForeignKey(
+        entity = Task::class,
+        parentColumns = ["taskId"],
+        childColumns = ["taskId"],
+        onDelete = CASCADE
+    )], indices = [Index("taskId")]
+)
+data class TimeEntryDay(
+    @PrimaryKey(autoGenerate = true) var id: Long = 0,
+    val taskId: Long,
+    val date: LocalDate,
+    val duration: Duration
 )
 
 

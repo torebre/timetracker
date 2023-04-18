@@ -20,6 +20,19 @@ interface TimeEntryDao {
     @Query("SELECT * FROM timeEntry WHERE taskId = :taskId")
     fun getTimeEntriesForTask(taskId: Long): List<TimeEntry>
 
+    @Insert
+    fun insertTimeEntryDay(timeEntry: TimeEntry): Long
 
+    @Update
+    fun updateTimeEntryDay(timeEntry: TimeEntry)
+
+    @Delete
+    fun deleteTimeEntryDay(timeEntry: TimeEntry)
+
+    @Query("SELECT * FROM timeEntryDay WHERE id = :timeEntryId")
+    fun getTimeEntryDay(timeEntryId: Long): TimeEntryDay?
+
+    @Query("SELECT * FROM timeEntryDay WHERE taskId = :taskId")
+    fun getTimeEntriesDaysForTask(taskId: Long): List<TimeEntryDay>
 
 }
