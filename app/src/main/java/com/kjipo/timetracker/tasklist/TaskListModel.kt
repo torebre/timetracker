@@ -8,12 +8,15 @@ import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.taskscreen.TagUi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
 import java.time.Instant.now
 
 class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
@@ -29,6 +32,14 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     init {
         viewModelScope.launch(Dispatchers.IO) {
             reloadTasks()
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // TODO Figure if there are problems with multiple threads updating the state using this
+            while(isActive) {
+                delay(1000)
+                viewModelState.update { it.copy(refreshOngoingTasks(it.tasks)) }
+            }
         }
     }
 
@@ -63,6 +74,17 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+
+    private fun refreshOngoingTasks(tasks: List<TaskUi>): List<TaskUi> {
+        return tasks.map {
+            if (!it.isOngoing()) {
+                it
+            } else {
+                it.copy(totalDuration = it.computeTotalDuration())
+            }
+        }.toList()
+    }
+
     private suspend fun reloadTasks() {
         viewModelState.update {
             viewModelState.value.copy(
@@ -76,19 +98,10 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     private fun transformTaskToUiTask(task: TaskWithTimeEntries): TaskUi {
         return TaskUi(task.task.taskId,
             task.task.title,
-            sumTimeEntriesForTask(task),
-            task.timeEntries.any { it.stop == null },
+            task.timeEntries,
+            task.timeEntries.computeTotalDuration(),
             tags = task.tags.map { TagUi(it) })
     }
-
-    private fun sumTimeEntriesForTask(task: TaskWithTimeEntries): Duration {
-        return task.timeEntries.sumOf { timeEntry ->
-            val stop = timeEntry.stop ?: now()
-            stop.toEpochMilli() - timeEntry.start.toEpochMilli()
-        }
-            .let { Duration.ofMillis(it) }
-    }
-
 
     companion object {
 
@@ -112,7 +125,35 @@ data class TaskListUiState(val tasks: List<TaskUi> = emptyList())
 data class TaskUi(
     val id: Long,
     val title: String,
-    val duration: Duration,
-    val ongoing: Boolean,
+    val timeEntries: List<TimeEntry>,
+    val totalDuration: Duration,
     val tags: List<TagUi> = emptyList()
-)
+) {
+
+
+    fun getCurrentStart(): TimeEntry? {
+        return timeEntries.find { it.stop == null }
+    }
+
+    fun isOngoing() = getCurrentStart() != null
+
+    fun getCurrentDuration(): Duration? {
+        return getCurrentStart()?.let {
+            Duration.between(it.start, Instant.now())
+        }
+    }
+
+    fun computeTotalDuration(): Duration {
+        return timeEntries.computeTotalDuration()
+    }
+}
+
+fun List<TimeEntry>.computeTotalDuration(): Duration {
+    return sumOf { timeEntry ->
+        val stop = timeEntry.stop ?: now()
+        stop.toEpochMilli() - timeEntry.start.toEpochMilli()
+    }
+        .let { Duration.ofMillis(it) }
+
+}
+

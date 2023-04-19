@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,12 +22,14 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.taskscreen.TagUi
 import com.kjipo.timetracker.toHoursPartHelper
 import com.kjipo.timetracker.toMinutesPartHelper
 import com.kjipo.timetracker.toSecondsPartHelper
 import com.kjipo.timetracker.toTwoDigits
 import java.time.Duration
+import java.time.Instant
 
 
 class TaskListInputParameters(
@@ -51,8 +52,14 @@ class TaskListParameterInputProvider : PreviewParameterProvider<TaskListInputPar
 
 
 private fun getPreviewTasks(): List<TaskUi> {
+    val timeEntry = TimeEntry(1, 1, Instant.ofEpochSecond(10000))
     return (1L until 20).map { id ->
-        TaskUi(id, "Task $id", Duration.ofMinutes(10), id.mod(2) == 0)
+        TaskUi(
+            id,
+            "Task $id",
+            listOf(timeEntry),
+            Duration.between(timeEntry.start, Instant.ofEpochSecond(20000))
+        )
     }
 }
 
@@ -99,12 +106,11 @@ class TaskRowInput(
 class TaskRowParameterProvider : PreviewParameterProvider<TaskRowInput> {
 
     override val values = sequenceOf(
-        TaskRowInput(TaskUi(1, "Task 1", Duration.ofMinutes(10), false), {
+        TaskRowInput(getPreviewTasks().first(), {
             // Do nothing
-        },
-            {
-                // Do nothing
-            })
+        }, {
+            // Do nothing
+        })
     )
 
 }
@@ -128,17 +134,17 @@ fun TaskRow(@PreviewParameter(TaskRowParameterProvider::class) taskRowInput: Tas
             text = taskRowInput.task.title
         )
 
-        val durationText = with(taskRowInput.task.duration) {
-            "${toTwoDigits(toHoursPartHelper())}:${toTwoDigits(toMinutesPartHelper())}:${
-                toTwoDigits(
-                    toSecondsPartHelper()
-                )
-            }"
-        }
+        Column {
+            Text(
+                text = formatDuration(taskRowInput.task.computeTotalDuration())
+            )
 
-        Text(
-            text = durationText
-        )
+            Text(
+                text = taskRowInput.task.getCurrentDuration()?.let {
+                    formatDuration(it)
+                } ?: ""
+            )
+        }
 
         // This is to push the buttons to the end of the row
         Spacer(Modifier.weight(1f))
@@ -147,7 +153,7 @@ fun TaskRow(@PreviewParameter(TaskRowParameterProvider::class) taskRowInput: Tas
             onClick = {
                 taskRowInput.toggleStartStop(taskRowInput.task.id)
             }) {
-            if (taskRowInput.task.ongoing) {
+            if (taskRowInput.task.isOngoing()) {
                 // TODO Use better icon
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -170,6 +176,15 @@ fun TaskRow(@PreviewParameter(TaskRowParameterProvider::class) taskRowInput: Tas
 
 }
 
+private fun formatDuration(duration: Duration): String {
+    with(duration) {
+        return "${toTwoDigits(toHoursPartHelper())}:${toTwoDigits(toMinutesPartHelper())}:${
+            toTwoDigits(
+                toSecondsPartHelper()
+            )
+        }"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -180,7 +195,7 @@ fun Tag(tagUi: TagUi) {
         )
         .padding(1.dp),
         onClick = {
-                  // Do nothing
+            // Do nothing
         },
         label = { Text(tagUi.title) },
         trailingIcon = { Icons.Default.Close })

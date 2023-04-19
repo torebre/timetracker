@@ -16,7 +16,6 @@ class ReportScreenInput(uiState: ReportsModel.ReportsUiState)
 
 class ReportScreenInputParameterProvider: PreviewParameterProvider<ReportScreenInput> {
     override val values = sequenceOf(ReportScreenInput(ReportsModel.ReportsUiState()))
-
 }
 
 
@@ -35,16 +34,13 @@ fun ReportScreen(@PreviewParameter(PreviewParameterProvider::class) reportScreen
 
     // TODO Get file to export to
 
+    // TODO Just here for testing
+    CalendarComponent(calendarUiState = CalendarUiState())
+
     val fileToExportTo = File(context.cacheDir, "export_file_temp.zip")
-
-
     Button(onClick = { exportData(fileToExportTo, context) }) {
         Text("Export")
     }
 
-
-
-
 }
-
 
