@@ -1,14 +1,12 @@
 package com.kjipo.timetracker.taskscreen
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.kjipo.timetracker.TaskRepository
-import com.kjipo.timetracker.database.Tag
+import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
-import com.kjipo.timetracker.tagscreen.toAndroidGraphicsColor
+import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -42,7 +40,7 @@ class TaskScreenModel(
             viewModelScope.launch(Dispatchers.IO) {
                 // All tags are available for selection when the task is new
                 val availableTags = taskRepository.getTags()
-                    .map { TagUi(it) }
+                    .map { TaskMarkUiElement(it) }
                 viewModelState.update {
                     it.copy(
                         initialLoading = false,
@@ -54,12 +52,12 @@ class TaskScreenModel(
     }
 
 
-    fun saveTask(taskName: String, tags: List<TagUi>) {
+    fun saveTask(taskName: String, tags: List<TaskMarkUiElement>) {
         viewModelScope.launch(Dispatchers.IO) {
             if (taskId == 0L) {
                 taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }).taskId
             } else {
-                taskRepository.saveTask(taskId, taskName, tags.map { it.tagId })
+                taskRepository.saveTask(taskId, taskName, tags.map { it.elementId })
             }
             loadTask()
         }
@@ -80,7 +78,7 @@ class TaskScreenModel(
             val tagIds = taskWithTimeEntries.tags.map { it.tagId }
             val availableTags = taskRepository.getTags()
                 .filter { !tagIds.contains(it.tagId) }
-                .map { TagUi(it) }
+                .map { TaskMarkUiElement(it) }
 
             Timber.tag("TaskScreenModel").i("Tags: ${tagIds}")
 
@@ -88,7 +86,7 @@ class TaskScreenModel(
                 taskScreenUiState.copy(
                     taskUi = TaskUi(taskWithTimeEntries),
                     timeEntries = taskWithTimeEntries.timeEntries.map { TimeEntryUi(it) },
-                    tags = taskWithTimeEntries.tags.map { TagUi(it) },
+                    tags = taskWithTimeEntries.tags.map { TaskMarkUiElement(it) },
                     initialLoading = false,
                     availableTags = availableTags
                 )
@@ -158,21 +156,11 @@ data class TimeEntryUi(
 }
 
 
-data class TagUi(val tagId: Long, val title: String, val colour: Color?) {
-
-    constructor(tag: Tag) : this(tag.tagId, tag.title, tag.colour?.let {
-        Color(it.red(), it.green(), it.blue())
-    })
-
-    fun toTag() = Tag(tagId = tagId, title = title, colour = colour?.toAndroidGraphicsColor())
-
-}
-
 
 data class TaskScreenUiState(
     val taskUi: TaskUi = TaskUi(),
     val timeEntries: List<TimeEntryUi> = emptyList(),
-    val tags: List<TagUi> = emptyList(),
+    val tags: List<TaskMarkUiElement> = emptyList(),
     val initialLoading: Boolean = true,
-    val availableTags: List<TagUi> = emptyList()
+    val availableTags: List<TaskMarkUiElement> = emptyList()
 )

@@ -4,10 +4,12 @@ import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.lifecycle.lifecycleScope
-import com.kjipo.timetracker.database.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.kjipo.timetracker.database.AppDatabase
+import com.kjipo.timetracker.database.Converters
+import com.kjipo.timetracker.database.Tag
+import com.kjipo.timetracker.database.TagTasksCrossRef
+import com.kjipo.timetracker.database.Task
+import com.kjipo.timetracker.database.TimeEntry
 import timber.log.Timber
 import java.time.LocalDateTime
 import java.time.ZoneOffset

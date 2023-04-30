@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kjipo.timetracker.database.TimeEntry
-import com.kjipo.timetracker.taskscreen.TagUi
+import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.toHoursPartHelper
 import com.kjipo.timetracker.toMinutesPartHelper
 import com.kjipo.timetracker.toSecondsPartHelper
@@ -188,7 +188,7 @@ private fun formatDuration(duration: Duration): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Tag(tagUi: TagUi) {
+fun Tag(tagUi: TaskMarkUiElement) {
     AssistChip(modifier = Modifier
         .background(
             tagUi.colour ?: MaterialTheme.colorScheme.background

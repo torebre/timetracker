@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.dateFormatter
+import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.timeFormatter
 import timber.log.Timber
 import java.time.Instant
@@ -79,7 +80,7 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 
 class TaskScreenInput(
     val taskScreenUiState: State<TaskScreenUiState>,
-    val saveData: (String, List<TagUi>) -> Unit,
+    val saveData: (String, List<TaskMarkUiElement>) -> Unit,
     val navigateToTimeEditScreen: (Long) -> Unit,
     val deleteTimeEntry: (Long) -> Unit
 )
@@ -87,7 +88,7 @@ class TaskScreenInput(
 @Composable
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
-    saveTask: (String, List<TagUi>) -> Unit,
+    saveTask: (String, List<TaskMarkUiElement>) -> Unit,
     navigateToTimeEditScreen: (Long) -> Unit,
     deleteTimeEntry: (Long) -> Unit
 ) {
@@ -257,7 +258,7 @@ fun TimeEntryRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Tag(tagUi: TagUi, removeTag: () -> Unit) {
+fun Tag(tagUi: TaskMarkUiElement, removeTag: () -> Unit) {
     InputChip(modifier = Modifier
         .background(
             tagUi.colour ?: androidx.compose.material3.MaterialTheme.colorScheme.background
@@ -275,8 +276,8 @@ fun Tag(tagUi: TagUi, removeTag: () -> Unit) {
 
 @Composable
 fun TagSelectionMenu(
-    availableTags: List<TagUi>,
-    addTag: (TagUi) -> Unit,
+    availableTags: List<TaskMarkUiElement>,
+    addTag: (TaskMarkUiElement) -> Unit,
     expanded: MutableState<Boolean>
 ) {
     Box(

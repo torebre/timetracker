@@ -3,10 +3,10 @@ package com.kjipo.timetracker.tasklist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.kjipo.timetracker.TaskRepository
+import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
-import com.kjipo.timetracker.taskscreen.TagUi
+import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,7 +100,7 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
             task.task.title,
             task.timeEntries,
             task.timeEntries.computeTotalDuration(),
-            tags = task.tags.map { TagUi(it) })
+            tags = task.tags.map { TaskMarkUiElement(it) })
     }
 
     companion object {
@@ -127,7 +127,7 @@ data class TaskUi(
     val title: String,
     val timeEntries: List<TimeEntry>,
     val totalDuration: Duration,
-    val tags: List<TagUi> = emptyList()
+    val tags: List<TaskMarkUiElement> = emptyList()
 ) {
 
 

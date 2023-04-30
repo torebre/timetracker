@@ -52,6 +52,13 @@ data class Tag(
     val colour: android.graphics.Color? = null
 )
 
+@Entity
+data class Project(
+    @PrimaryKey(autoGenerate = true) var projectId: Long = 0,
+    val title: String,
+    val colour: android.graphics.Color? = null
+)
+
 @Entity(primaryKeys = ["timeEntryId", "taskId"])
 data class TimeEntryTaskCrossRef(
     val timeEntryId: Long,
@@ -94,4 +101,23 @@ data class TagWithTaskEntries(
         associateBy = Junction(TagTasksCrossRef::class)
     )
     val taskEntries: List<Task>
+)
+
+@Entity(
+    primaryKeys = ["projectId", "taskId"],
+    indices = [Index("projectId")]
+)
+data class ProjectTasksCrossRef(
+    val projectId: Long,
+    val taskId: Long
+)
+
+data class ProjectWithTaskEntries(
+    @Embedded val project: Project,
+    @Relation(
+        parentColumn = "projectId",
+        entityColumn = "taskId",
+        associateBy = Junction(ProjectTasksCrossRef::class)
+    )
+    val taskEntries: List<Project>
 )

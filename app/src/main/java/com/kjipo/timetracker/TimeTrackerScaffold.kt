@@ -17,7 +17,7 @@ import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
 import com.kjipo.timetracker.taglistscreen.TagModel
 import com.kjipo.timetracker.taglistscreen.TagListScreen
-import com.kjipo.timetracker.tagscreen.TagScreen
+import com.kjipo.timetracker.tagscreen.TaskMarkElementScreen
 import com.kjipo.timetracker.tagscreen.TagScreenModel
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
@@ -47,7 +47,11 @@ fun TimeTrackerScaffold(
                 },
                 {
                     appState.navigateToScreen("${Screens.TAG.name}/0")
-                })
+                },
+                {
+                    appState.navigateToScreen("${Screens.PROJECT.name}/0")
+                }
+            )
         }
 
     ) { paddingValues ->
@@ -57,20 +61,7 @@ fun TimeTrackerScaffold(
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screens.TASKS.name) {
-                val taskListModel: TaskListModel = viewModel(
-                    factory = TaskListModel.provideFactory(
-                        appContainer.taskRepository
-                    )
-                )
-                taskListModel.refresh()
-
-                TaskList(taskListModel, { taskId ->
-                    appState.navigateToScreen("${Screens.TASK.name}/$taskId")
-                },
-                    { taskId ->
-                        taskListModel.toggleStartStop(taskId)
-                    }
-                )
+                GoToTasksScreen(appContainer, appState)
             }
 
             composable(Screens.REPORTS.name) {
@@ -84,24 +75,7 @@ fun TimeTrackerScaffold(
                     type = NavType.LongType
                 })
             ) { navBackStackEntry ->
-                navBackStackEntry.arguments?.getLong("taskId")?.let { taskId ->
-                    val taskScreenModel: TaskScreenModel = viewModel(
-                        factory = TaskScreenModel.provideFactory(
-                            taskId,
-                            appContainer.taskRepository
-                        )
-                    )
-
-                    TaskScreen(taskScreenModel, { title, tags ->
-                        taskScreenModel.saveTask(title, tags)
-                    },
-                        { timeEntryId ->
-                            appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
-                        },
-                        {timeEntryId ->
-                            taskScreenModel.deleteTimeEntry(timeEntryId)
-                        })
-                }
+                GoToTaskScreen(navBackStackEntry, appContainer, appState)
             }
 
             composable(
@@ -110,49 +84,15 @@ fun TimeTrackerScaffold(
                     type = NavType.LongType
                 })
             ) { navBackStackEntry ->
-                val coroutineScope = rememberCoroutineScope()
-
-                navBackStackEntry.arguments?.getLong("timeEntryId")?.let { timeEntryId ->
-                    val uiState by produceState(initialValue = TimeEntryEditUiState(waiting = true)) {
-
-                        coroutineScope.launch(Dispatchers.IO) {
-                            val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
-                            value = TimeEntryEditUiState(timeEntry = timeEntry)
-                        }
-                    }
-
-                    TimeEntryScreen(uiState, { timeEntry ->
-                        coroutineScope.launch(Dispatchers.IO) {
-                            appContainer.taskRepository.updateTimeEntry(timeEntry)
-                            coroutineScope.launch(Dispatchers.Main) {
-                                appState.navigateToScreen("${Screens.TASK.name}/${timeEntry.taskId}")
-                            }
-                        }
-                    },
-                        {
-                            coroutineScope.launch(Dispatchers.IO) {
-                                appContainer.taskRepository.getTimeEntry(timeEntryId)?.let {
-                                    coroutineScope.launch(Dispatchers.Main) {
-                                        appState.navigateToScreen("${Screens.TASK.name}/${it.taskId}")
-                                    }
-                                }
-                            }
-                        })
-                }
+                GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
             }
 
-            composable(Screens.TAGS.name) { navBackStackEntry ->
-                val tagModel: TagModel = viewModel(
-                    factory = TagModel.provideFactory(
-                        appContainer.taskRepository
-                    )
-                )
+            composable(Screens.TAGS.name) {
+                GoToTaskMarkersList(true, appContainer, appState)
+            }
 
-                tagModel.loadTags()
-
-                TagListScreen(tagModel) {
-                    appState.navigateToScreen("${Screens.TAG.name}/${it}")
-                }
+            composable(Screens.PROJECTS.name) {
+                GoToTaskMarkersList(false, appContainer, appState)
             }
 
             composable(
@@ -161,21 +101,157 @@ fun TimeTrackerScaffold(
                     type = NavType.LongType
                 })
             ) { navBackStackEntry ->
-                val tagModel: TagScreenModel = viewModel(
-                    factory = TagScreenModel.provideFactory(
-                        appContainer.taskRepository
-                    )
+                GoToTaskMarkerScreen(
+                    appContainer,
+                    true,
+                    navBackStackEntry.arguments?.getLong("tagId"),
+                    appState
                 )
-                navBackStackEntry.arguments?.getLong("tagId")?.let {
-                    tagModel.setCurrentTag(it)
-                }
-                TagScreen(tagModel) {
-                    appState.navigateToScreen(Screens.TAGS.name)
-                }
+            }
+
+            composable(
+                "${Screens.PROJECT.name}/{projectId}",
+                arguments = listOf(navArgument("projectId") {
+                    type = NavType.LongType
+                })
+            ) { navBackStackEntry ->
+                GoToTaskMarkerScreen(
+                    appContainer,
+                    false,
+                    navBackStackEntry.arguments?.getLong("tagId"),
+                    appState
+                )
             }
         }
     }
 
+}
+
+@Composable
+private fun GoToTaskMarkerScreen(
+    appContainer: AppContainer,
+    isTag: Boolean,
+    elementId: Long?,
+    appState: TimeTrackerAppState
+) {
+    val taskMarkerModel: TagScreenModel = viewModel(
+        factory = TagScreenModel.provideFactory(
+            isTag,
+            appContainer.taskRepository
+        )
+    )
+
+    elementId?.let {
+        taskMarkerModel.setCurrentTag(it)
+    }
+
+    TaskMarkElementScreen(taskMarkerModel) {
+        appState.navigateToScreen(Screens.TAGS.name)
+    }
+}
+
+@Composable
+private fun GoToTaskMarkersList(
+    isTag: Boolean,
+    appContainer: AppContainer,
+    appState: TimeTrackerAppState
+) {
+    val tagModel: TagModel = viewModel(
+        factory = TagModel.provideFactory(
+            isTag,
+            appContainer.taskRepository
+        )
+    )
+
+    TagListScreen(tagModel) {
+        appState.navigateToScreen("${Screens.TAG.name}/${it}")
+    }
+}
+
+
+@Composable
+private fun GoToTasksScreen(
+    appContainer: AppContainer,
+    appState: TimeTrackerAppState
+) {
+    val taskListModel: TaskListModel = viewModel(
+        factory = TaskListModel.provideFactory(
+            appContainer.taskRepository
+        )
+    )
+    taskListModel.refresh()
+
+    TaskList(taskListModel, { taskId ->
+        appState.navigateToScreen("${Screens.TASK.name}/$taskId")
+    },
+        { taskId ->
+            taskListModel.toggleStartStop(taskId)
+        }
+    )
+}
+
+@Composable
+private fun GoToTaskScreen(
+    navBackStackEntry: NavBackStackEntry,
+    appContainer: AppContainer,
+    appState: TimeTrackerAppState
+) {
+    navBackStackEntry.arguments?.getLong("taskId")?.let { taskId ->
+        val taskScreenModel: TaskScreenModel = viewModel(
+            factory = TaskScreenModel.provideFactory(
+                taskId,
+                appContainer.taskRepository
+            )
+        )
+
+        TaskScreen(taskScreenModel, { title, tags ->
+            taskScreenModel.saveTask(title, tags)
+        },
+            { timeEntryId ->
+                appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
+            },
+            { timeEntryId ->
+                taskScreenModel.deleteTimeEntry(timeEntryId)
+            })
+    }
+
+}
+
+@Composable
+private fun GoToTimeEntryScreen(
+    navBackStackEntry: NavBackStackEntry,
+    appContainer: AppContainer,
+    appState: TimeTrackerAppState
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    navBackStackEntry.arguments?.getLong("timeEntryId")?.let { timeEntryId ->
+        val uiState by produceState(initialValue = TimeEntryEditUiState(waiting = true)) {
+
+            coroutineScope.launch(Dispatchers.IO) {
+                val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
+                value = TimeEntryEditUiState(timeEntry = timeEntry)
+            }
+        }
+
+        TimeEntryScreen(uiState, { timeEntry ->
+            coroutineScope.launch(Dispatchers.IO) {
+                appContainer.taskRepository.updateTimeEntry(timeEntry)
+                coroutineScope.launch(Dispatchers.Main) {
+                    appState.navigateToScreen("${Screens.TASK.name}/${timeEntry.taskId}")
+                }
+            }
+        },
+            {
+                coroutineScope.launch(Dispatchers.IO) {
+                    appContainer.taskRepository.getTimeEntry(timeEntryId)?.let {
+                        coroutineScope.launch(Dispatchers.Main) {
+                            appState.navigateToScreen("${Screens.TASK.name}/${it.taskId}")
+                        }
+                    }
+                }
+            })
+    }
 }
 
 
@@ -201,6 +277,12 @@ fun TimeTrackerBottomBar(
         }) {
             Text("Tags")
         }
+
+        Button(onClick = {
+            navigateToRoute(Screens.PROJECTS.name)
+        }) {
+            Text("Projects")
+        }
     }
 
 }
@@ -209,15 +291,22 @@ fun TimeTrackerBottomBar(
 fun AddTaskButton(
     taskScreenShowing: MutableState<Screens?>,
     addTask: () -> Unit,
-    addTag: () -> Unit
+    addTag: () -> Unit,
+    addProject: () -> Unit
 ) {
     when (taskScreenShowing.value) {
         Screens.TASKS -> {
             FloatingAddButton(contentDescription = "Add task", onClickHandler = addTask)
         }
+
         Screens.TAGS -> {
             FloatingAddButton(contentDescription = "Add tag", onClickHandler = addTag)
         }
+
+        Screens.PROJECT -> {
+            FloatingAddButton(contentDescription = "Add project", onClickHandler = addProject)
+        }
+
         else -> {
             // Do not add a floating button
         }

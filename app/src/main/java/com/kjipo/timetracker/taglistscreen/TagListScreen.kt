@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.kjipo.timetracker.taskscreen.TagUi
+import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -33,9 +33,9 @@ class TagScreenInputParameterProvider : PreviewParameterProvider<TagScreenInputP
                 MutableStateFlow(
                     TagListUiState(
                         listOf(
-                            TagUi(1, "Tag1", Color.Red),
-                            TagUi(2, "Tag2", Color.Yellow),
-                            TagUi(3, "Tag3", Color.Green)
+                            TaskMarkUiElement(1, "Tag1", Color.Red),
+                            TaskMarkUiElement(2, "Tag2", Color.Yellow),
+                            TaskMarkUiElement(3, "Tag3", Color.Green)
                         )
                     )
                 ),
@@ -70,17 +70,17 @@ fun TagListScreen(@PreviewParameter(TagScreenInputParameterProvider::class) tagS
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         items(items = tagScreenInput.tagListUiState.value.tags,
             key = { tag ->
-                tag.tagId
+                tag.elementId
             }) {
-            TagRow(it, { tagId -> tagScreenInput.goToTag(tagId) })
+            TagRow(it, { elementId -> tagScreenInput.goToTag(elementId) })
         }
     }
 
 }
 
 @Composable
-fun TagRow(tagUi: TagUi, goToTag: (Long) -> Unit) {
-    Row(modifier = Modifier.clickable { goToTag(tagUi.tagId) }) {
+fun TagRow(tagUi: TaskMarkUiElement, goToTag: (Long) -> Unit) {
+    Row(modifier = Modifier.clickable { goToTag(tagUi.elementId) }) {
         Text(
             modifier = Modifier.background(tagUi.colour ?: MaterialTheme.colorScheme.background),
             style = MaterialTheme.typography.displayMedium,

@@ -13,19 +13,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.kjipo.timetracker.taskscreen.TagUi
 
 
-class TagScreenInput(
-    val tagUi: TagScreenUiState,
-    val save: (tagUi: TagUi) -> Unit,
+class TaskMarkScreenInput(
+    val tagUi: TaskMarkElementUiState,
+    val save: (tagUi: TaskMarkUiElement) -> Unit,
     val deleteTag: () -> Unit,
     val navigateToTagList: () -> Unit
 )
 
-class TagScreenParameterProvider : PreviewParameterProvider<TagScreenInput> {
+class TaskMarkElementParameterProvider : PreviewParameterProvider<TaskMarkScreenInput> {
     override val values = sequenceOf(
-        TagScreenInput(TagScreenUiState(TagUi(1, "Test tag", Color.Green), false),
+        TaskMarkScreenInput(TaskMarkElementUiState(TaskMarkUiElement(1, "Test tag", Color.Green), false),
             { tagUi ->
                 // Do nothing
             }, {
@@ -38,14 +37,14 @@ class TagScreenParameterProvider : PreviewParameterProvider<TagScreenInput> {
 }
 
 @Composable
-fun TagScreen(tagScreenModel: TagScreenModel, navigateToTagList: () -> Unit) {
+fun TaskMarkElementScreen(tagScreenModel: TagScreenModel, navigateToTagList: () -> Unit) {
     val uiState = tagScreenModel.uiState.collectAsState()
 
     if(uiState.value.loading) {
         return
     }
 
-    TagScreen(TagScreenInput(uiState.value, {
+    TaskMarkElementScreen(TaskMarkScreenInput(uiState.value, {
         tagScreenModel.updateTag(it)
     }, {
         tagScreenModel.deleteTag()
@@ -56,7 +55,7 @@ fun TagScreen(tagScreenModel: TagScreenModel, navigateToTagList: () -> Unit) {
 
 @Preview(showBackground = true)
 @Composable
-fun TagScreen(@PreviewParameter(TagScreenParameterProvider::class) tagScreenInput: TagScreenInput) {
+fun TaskMarkElementScreen(@PreviewParameter(TaskMarkElementParameterProvider::class) tagScreenInput: TaskMarkScreenInput) {
     val title = remember {
         mutableStateOf(tagScreenInput.tagUi.tag.title)
     }
@@ -77,7 +76,7 @@ fun TagScreen(@PreviewParameter(TagScreenParameterProvider::class) tagScreenInpu
                 Text("Save")
             }
 
-            val isNewTag = tagScreenInput.tagUi.tag.tagId == 0L
+            val isNewTag = tagScreenInput.tagUi.tag.elementId == 0L
             Button(onClick = {
                 // Nothing to delete if the tag is new
                 if(!isNewTag) {

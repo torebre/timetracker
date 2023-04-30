@@ -3,6 +3,8 @@ package com.kjipo.timetracker
 import android.content.Context
 import androidx.room.Room
 import com.kjipo.timetracker.database.AppDatabase
+import com.kjipo.timetracker.database.TaskRepository
+import com.kjipo.timetracker.database.TaskRepositoryImpl
 
 
 interface AppContainer {

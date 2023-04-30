@@ -1,7 +1,6 @@
-package com.kjipo.timetracker
+package com.kjipo.timetracker.database
 
 import androidx.room.Transaction
-import com.kjipo.timetracker.database.*
 import java.time.Instant
 
 
@@ -41,6 +40,20 @@ interface TaskRepository {
     suspend fun getTasksForTag(tagId: Long): List<TagWithTaskEntries>
 
     suspend fun deleteTimeEntry(timeEntryId: Long)
+
+    suspend fun getProjects(): List<Project>
+
+    suspend fun getProject(projectId: Long): Project?
+
+    suspend fun insertProject(project: Project): Long
+
+    suspend fun updateProject(project: Project)
+
+    suspend fun deleteProject(project: Project)
+
+    suspend fun addProject(taskId: Long, projectId: Long)
+
+    suspend fun removeProject(taskId: Long, projectId: Long)
 
 }
 
@@ -151,6 +164,35 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         appDatabase.timeEntryDao().getTimeEntry(timeEntryId)?.apply {
             appDatabase.timeEntryDao().deleteTimeEntry(this)
         }
+    }
+
+    override suspend fun getProjects(): List<Project> {
+        return appDatabase.projectDao().getProjects()
+    }
+
+    override suspend fun getProject(projectId: Long): Project? {
+        return appDatabase.projectDao().getProject(projectId)
+    }
+
+    override suspend fun insertProject(project: Project): Long {
+        return appDatabase.projectDao().insertProject(project)
+    }
+
+    override suspend fun updateProject(project: Project) {
+        appDatabase.projectDao().updateProject(project)
+    }
+
+    override suspend fun deleteProject(project: Project) {
+        appDatabase.projectDao().deleteProject(project)
+    }
+
+    override suspend fun addProject(taskId: Long, projectId: Long) {
+        TODO("Not yet implemented")
+
+    }
+
+    override suspend fun removeProject(taskId: Long, projectId: Long) {
+        TODO("Not yet implemented")
     }
 
 
