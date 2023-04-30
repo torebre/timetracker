@@ -38,11 +38,17 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
+
+    // There were some problems when switching to Gradle version 8, so needed to set this option below. Check here for further updated: https://youtrack.jetbrains.com/issue/KT-55947
+    kotlin {
+        jvmToolchain(11)
+    }
+
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11'
     }
     buildFeatures {
         compose true
