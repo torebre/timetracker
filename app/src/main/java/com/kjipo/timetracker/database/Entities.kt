@@ -2,6 +2,7 @@ package com.kjipo.timetracker.database
 
 import androidx.room.*
 import androidx.room.ForeignKey.Companion.CASCADE
+import androidx.room.ForeignKey.Companion.SET_NULL
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -39,10 +40,18 @@ data class TimeEntryDay(
 )
 
 
-@Entity
+@Entity(
+    foreignKeys = [ForeignKey(
+        entity = Project::class,
+        parentColumns = ["projectId"],
+        childColumns = ["projectId"],
+        onDelete = SET_NULL
+    )], indices = [Index("taskId")]
+)
 data class Task(
     @PrimaryKey(autoGenerate = true) var taskId: Long = 0,
-    val title: String
+    val title: String,
+    val projectId: Long? = null
 )
 
 @Entity

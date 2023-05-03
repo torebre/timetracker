@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -186,7 +185,6 @@ private fun formatDuration(duration: Duration): String {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Tag(tagUi: TaskMarkUiElement) {
     AssistChip(modifier = Modifier
@@ -199,5 +197,4 @@ fun Tag(tagUi: TaskMarkUiElement) {
         },
         label = { Text(tagUi.title) },
         trailingIcon = { Icons.Default.Close })
-
 }

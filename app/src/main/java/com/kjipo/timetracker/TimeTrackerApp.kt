@@ -11,6 +11,7 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import timber.log.Timber
 
 
 @Composable
@@ -44,10 +45,10 @@ fun rememberTimeTrackerAppState(
 class TimeTrackerAppState(
     val scaffoldState: ScaffoldState,
     val navController: NavHostController,
-    val screenshowing: MutableState<Screens?>
+    val screenShowing: MutableState<Screens?>
 ) {
 
-    val currentRoute: String?
+    private val currentRoute: String?
         get() = navController.currentDestination?.route
 
 
@@ -56,9 +57,9 @@ class TimeTrackerAppState(
 
             // TODO Is this a good way to handle the route to the task screen?
             navController.navigate(route) {
-                screenshowing.value = Screens.values().filter {
+                screenShowing.value = Screens.values().first {
                     route.startsWith(it.name)
-                }.first()
+                }
 
                 launchSingleTop = true
                 restoreState =
@@ -71,6 +72,8 @@ class TimeTrackerAppState(
                 }
             }
         }
+
+        Timber.tag("Navigation").d("Screen showing: ${screenShowing.value}")
     }
 
 

@@ -18,8 +18,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 class TaskMarkScreenInput(
     val tagUi: TaskMarkElementUiState,
     val save: (tagUi: TaskMarkUiElement) -> Unit,
-    val deleteTag: () -> Unit,
-    val navigateToTagList: () -> Unit
+    val deleteElement: () -> Unit,
+    val navigateToElementList: () -> Unit
 )
 
 class TaskMarkElementParameterProvider : PreviewParameterProvider<TaskMarkScreenInput> {
@@ -69,7 +69,7 @@ fun TaskMarkElementScreen(@PreviewParameter(TaskMarkElementParameterProvider::cl
             Button(
                 onClick = {
                     tagScreenInput.save(tagScreenInput.tagUi.tag.copy(title = title.value))
-                    tagScreenInput.navigateToTagList()
+                    tagScreenInput.navigateToElementList()
                 },
                 enabled = title.value != tagScreenInput.tagUi.tag.title
             ) {
@@ -80,9 +80,9 @@ fun TaskMarkElementScreen(@PreviewParameter(TaskMarkElementParameterProvider::cl
             Button(onClick = {
                 // Nothing to delete if the tag is new
                 if(!isNewTag) {
-                    tagScreenInput.deleteTag()
+                    tagScreenInput.deleteElement()
                 }
-                tagScreenInput.navigateToTagList()
+                tagScreenInput.navigateToElementList()
             }) {
                 // If the ID is 0 then this a new tag
                 if(isNewTag) {

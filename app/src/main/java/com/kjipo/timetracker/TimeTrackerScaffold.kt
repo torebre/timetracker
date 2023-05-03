@@ -29,19 +29,64 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimeTrackerScaffold(
     appState: TimeTrackerAppState,
     appContainer: AppContainer
 ) {
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS)
+    val scope = rememberCoroutineScope()
+    val selectedItem = remember { mutableStateOf(drawerItems[0]) }
 
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                drawerItems.forEach { drawerItem ->
+                    NavigationDrawerItem(label = {
+                        Text(drawerItem.name)
+                    },
+                        selected = drawerItem == selectedItem.value,
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                                selectedItem.value = drawerItem
+                                appState.navigateToScreen(drawerItem.name)
+                            }
+                        })
+                }
+
+                NavigationDrawerItem(label = {
+                    Text("Setup test data")
+                },
+                    selected = false,
+                    onClick = {
+                        scope.launch(Dispatchers.IO) {
+                            appContainer.appDatabase.clearAllTables()
+                            addTestData(appContainer.appDatabase)
+                        }
+                    })
+            }
+        })
+    {
+        MainContentScaffold(appState, appContainer)
+    }
+
+}
+
+
+@Composable
+private fun MainContentScaffold(
+    appState: TimeTrackerAppState,
+    appContainer: AppContainer
+) {
     Scaffold(
         bottomBar = {
             TimeTrackerBottomBar(appState::navigateToScreen)
         },
         floatingActionButton = {
-            AddTaskButton(appState.screenshowing,
+            AddTaskButton(appState.screenShowing,
                 {
                     appState.navigateToScreen("${Screens.TASK.name}/0")
                 },
@@ -53,7 +98,6 @@ fun TimeTrackerScaffold(
                 }
             )
         }
-
     ) { paddingValues ->
         NavHost(
             navController = appState.navController,
@@ -118,7 +162,7 @@ fun TimeTrackerScaffold(
                 GoToTaskMarkerScreen(
                     appContainer,
                     false,
-                    navBackStackEntry.arguments?.getLong("tagId"),
+                    navBackStackEntry.arguments?.getLong("projectId"),
                     appState
                 )
             }
@@ -146,7 +190,11 @@ private fun GoToTaskMarkerScreen(
     }
 
     TaskMarkElementScreen(taskMarkerModel) {
-        appState.navigateToScreen(Screens.TAGS.name)
+        if (isTag) {
+            appState.navigateToScreen(Screens.TAGS.name)
+        } else {
+            appState.navigateToScreen(Screens.PROJECTS.name)
+        }
     }
 }
 
@@ -164,7 +212,11 @@ private fun GoToTaskMarkersList(
     )
 
     TagListScreen(tagModel) {
-        appState.navigateToScreen("${Screens.TAG.name}/${it}")
+        if (isTag) {
+            appState.navigateToScreen("${Screens.TAG.name}/${it}")
+        } else {
+            appState.navigateToScreen("${Screens.PROJECT.name}/${it}")
+        }
     }
 }
 
@@ -272,17 +324,17 @@ fun TimeTrackerBottomBar(
             Text("Reports")
         }
 
-        Button(onClick = {
-            navigateToRoute(Screens.TAGS.name)
-        }) {
-            Text("Tags")
-        }
-
-        Button(onClick = {
-            navigateToRoute(Screens.PROJECTS.name)
-        }) {
-            Text("Projects")
-        }
+//        Button(onClick = {
+//            navigateToRoute(Screens.TAGS.name)
+//        }) {
+//            Text("Tags")
+//        }
+//
+//        Button(onClick = {
+//            navigateToRoute(Screens.PROJECTS.name)
+//        }) {
+//            Text("Projects")
+//        }
     }
 
 }
@@ -303,7 +355,7 @@ fun AddTaskButton(
             FloatingAddButton(contentDescription = "Add tag", onClickHandler = addTag)
         }
 
-        Screens.PROJECT -> {
+        Screens.PROJECTS -> {
             FloatingAddButton(contentDescription = "Add project", onClickHandler = addProject)
         }
 

@@ -25,17 +25,22 @@ class TagModel(private val isTag: Boolean, private val taskRepository: TaskRepos
 
 
     init {
-        loadTags()
+        if(isTag) {
+            loadTags()
+        }
+        else {
+            loadProjects()
+        }
     }
 
 
     fun insertTag(title: String) {
         viewModelScope.launch(Dispatchers.IO) {
             if(isTag) {
-                taskRepository.updateTag(Tag(0, title))
+                taskRepository.insertTag(Tag(0, title))
             }
             else {
-                taskRepository.updateProject(Project(0, title))
+                taskRepository.insertProject(Project(0, title))
             }
         }
         loadTags()
