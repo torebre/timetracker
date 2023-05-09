@@ -36,7 +36,7 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
         viewModelScope.launch(Dispatchers.IO) {
             // TODO Figure if there are problems with multiple threads updating the state using this
-            while(isActive) {
+            while (isActive) {
                 delay(1000)
                 viewModelState.update { it.copy(refreshOngoingTasks(it.tasks)) }
             }
@@ -127,9 +127,9 @@ data class TaskUi(
     val title: String,
     val timeEntries: List<TimeEntry>,
     val totalDuration: Duration,
-    val tags: List<TaskMarkUiElement> = emptyList()
+    val tags: List<TaskMarkUiElement> = emptyList(),
+    val project: TaskMarkUiElement? = null
 ) {
-
 
     fun getCurrentStart(): TimeEntry? {
         return timeEntries.find { it.stop == null }
@@ -156,4 +156,3 @@ fun List<TimeEntry>.computeTotalDuration(): Duration {
         .let { Duration.ofMillis(it) }
 
 }
-

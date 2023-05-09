@@ -21,7 +21,15 @@ data class TimeEntry(
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     var start: Instant,
     var stop: Instant? = null
-)
+) {
+
+    fun getDuration(): Duration? {
+        return stop?.let {
+            Duration.between(start, it)
+        }
+    }
+
+}
 
 
 @Entity(
