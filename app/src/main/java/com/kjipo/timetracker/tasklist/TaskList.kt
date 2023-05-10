@@ -5,8 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -20,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -36,7 +40,6 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import kotlin.random.Random
-
 
 
 class TaskListInputParameters(
@@ -72,7 +75,11 @@ private fun getPreviewTasks(): List<TaskUi> {
             Duration.ofSeconds(
                 timeEntries.map { it.getDuration() }.filterNotNull().sumOf { it.seconds }),
             getRandomTags(random.nextInt(4)),
-            TaskMarkUiElement(projectId, "Project $projectId", Color.hsl(random.nextInt(360).toFloat(), 1f, 0.5f))
+            TaskMarkUiElement(
+                projectId,
+                "Project $projectId",
+                Color.hsl(random.nextInt(360).toFloat(), 1f, 0.5f)
+            )
         )
     }
 }
@@ -125,19 +132,25 @@ fun TaskList(
 
 @Composable
 fun TaskList(taskListInputParameters: TaskListInputParameters) {
+
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         items(items = taskListInputParameters.taskListUiState.tasks,
             key = { taskUi ->
                 taskUi.id
             }) { task ->
-            TaskRow(
-                TaskRowInput(
-                    task,
-                    taskListInputParameters.navigateToTaskScreen,
-                    taskListInputParameters.toggleStartStop
+            Surface(
+                modifier = Modifier.padding(bottom = 8.dp, start = 3.dp, end = 3.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
+            ) {
+                TaskRow(
+                    TaskRowInput(
+                        task,
+                        taskListInputParameters.navigateToTaskScreen,
+                        taskListInputParameters.toggleStartStop
+                    )
                 )
-            )
-
+            }
         }
     }
 }
@@ -163,69 +176,68 @@ class TaskRowInput(
 
 @Composable
 fun TaskRow(taskRowInput: TaskRowInput) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(40.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Text(
+    Column() {
+        Row(
             modifier = Modifier
-                .clickable {
-                    taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
+                .fillMaxWidth()
+                .height(80.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Text(
+                modifier = Modifier
+                    .clickable {
+                        taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
+                    }
+                    .width(120.dp)
+                    .padding(start = 5.dp),
+                text = taskRowInput.task.title
+            )
+
+                Text(
+                    text = formatDuration(taskRowInput.task.computeTotalDuration())
+                )
+
+                Text(
+                    text = taskRowInput.task.getCurrentDuration()?.let {
+                        formatDuration(it)
+                    } ?: ""
+                )
+
+            // This is to push the buttons to the end of the row
+            Spacer(Modifier.weight(1f))
+
+            IconButton(modifier = Modifier.padding(end = 5.dp),
+                onClick = {
+                    taskRowInput.toggleStartStop(taskRowInput.task.id)
+                }) {
+                if (taskRowInput.task.isOngoing()) {
+                    // TODO Use better icon
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Stop"
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Start"
+                    )
                 }
-                .width(120.dp)
-                .padding(start = 5.dp),
-            text = taskRowInput.task.title
-        )
-
-        Column {
-            Text(
-                text = formatDuration(taskRowInput.task.computeTotalDuration())
-            )
-
-            Text(
-                text = taskRowInput.task.getCurrentDuration()?.let {
-                    formatDuration(it)
-                } ?: ""
-            )
+            }
         }
 
-        // This is to push the buttons to the end of the row
-        Spacer(Modifier.weight(1f))
+        Row {
+            taskRowInput.task.tags.forEach { tagUi ->
+                Tag(tagUi)
+            }
+        }
 
-        IconButton(modifier = Modifier.padding(end = 5.dp),
-            onClick = {
-                taskRowInput.toggleStartStop(taskRowInput.task.id)
-            }) {
-            if (taskRowInput.task.isOngoing()) {
-                // TODO Use better icon
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Stop"
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Start"
-                )
+        Row(modifier = Modifier.padding(top = 5.dp)) {
+            taskRowInput.task.project?.let {
+                Tag(it)
             }
         }
     }
-
-    Row {
-        taskRowInput.task.tags.forEach { tagUi ->
-            Tag(tagUi)
-        }
-    }
-
-    Row(modifier = Modifier.padding(top = 5.dp)) {
-       taskRowInput.task.project?.let {
-           Tag(it)
-       }
-    }
-
 }
 
 private fun formatDuration(duration: Duration): String {
