@@ -20,8 +20,6 @@ fun TimeTrackerApp(appContainer: AppContainer) {
         val appState = rememberTimeTrackerAppState()
         TimeTrackerScaffold(appState, appContainer)
     }
-
-
 }
 
 

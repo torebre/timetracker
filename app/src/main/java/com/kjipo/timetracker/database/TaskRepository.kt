@@ -1,7 +1,13 @@
 package com.kjipo.timetracker.database
 
 import androidx.room.Transaction
+import timber.log.Timber
+import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.TimeZone
 
 
 interface TaskRepository {
@@ -9,13 +15,18 @@ interface TaskRepository {
     suspend fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries?
     suspend fun getTasks(): List<Task>
 
+    suspend fun getTask(taskId: Long): Task?
+
     suspend fun createTask(title: String = "", tags: List<Tag> = emptyList()): Task
 
     suspend fun updateTask(task: Task)
 
     suspend fun deleteTask(task: Task)
 
-    suspend fun getTasksWithTimeEntries(): List<TaskWithTimeEntries>
+    suspend fun getTasksWithTimeEntries(
+        startTime: LocalDateTime? = null,
+        stopTime: LocalDateTime? = null
+    ): List<TaskWithTimeEntries>
 
     suspend fun addTimeEntry(timeEntry: TimeEntry)
 
@@ -68,6 +79,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         return appDatabase.taskDao().getTasks()
     }
 
+    override suspend fun getTask(taskId: Long): Task? {
+        return appDatabase.taskDao().getTask(taskId)
+    }
+
     @Transaction
     override suspend fun createTask(title: String, tags: List<Tag>): Task {
         val newTask = Task(0, title)
@@ -87,8 +102,68 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         appDatabase.taskDao().deleteTask(task)
     }
 
-    override suspend fun getTasksWithTimeEntries(): List<TaskWithTimeEntries> {
-        return appDatabase.taskDao().getTasksWithTimeEntries()
+    override suspend fun getTasksWithTimeEntries(
+        startTime: LocalDateTime?,
+        stopTime: LocalDateTime?
+    ): List<TaskWithTimeEntries> {
+        val taskWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries()
+
+        return taskWithTimeEntries.filter { task ->
+            task.timeEntriesDay.any { timeEntryDay ->
+                shouldTimeEntryDayBeIncluded(timeEntryDay, startTime, stopTime)
+            } ||
+                    task.timeEntries.any { timeEntry ->
+                        shouldTimeEntryBeIncluded(timeEntry, startTime, stopTime)
+                    }
+        }
+    }
+
+    private fun shouldTimeEntryBeIncluded(
+        timeEntry: TimeEntry,
+        startTime: LocalDateTime?,
+        stopTime: LocalDateTime?
+    ): Boolean {
+        val duration = timeEntry.getDuration()
+            ?: Duration.ofSeconds(Instant.now().epochSecond - timeEntry.start.epochSecond)
+
+        // TODO Be more consistent in using Instant or LocalDateTime
+        val timeEntryStop = LocalDateTime.ofEpochSecond(
+            timeEntry.start.epochSecond + duration.seconds,
+            0,
+            ZoneId.systemDefault().rules.getOffset(Instant.now())
+        )
+        val timeEntryStart = LocalDateTime.ofInstant(
+            timeEntry.start,
+            ZoneId.systemDefault().rules.getOffset(Instant.now())
+        )
+
+        return if (startTime == null) {
+            stopTime?.isAfter(timeEntryStop) ?: true
+        } else {
+            if (stopTime == null) {
+                startTime.isBefore(timeEntryStart)
+            } else {
+                timeEntryStart.isAfter(startTime) && timeEntryStop.isBefore(stopTime)
+            }
+        }
+    }
+
+
+    private fun shouldTimeEntryDayBeIncluded(
+        timeEntryDay: TimeEntryDay,
+        startTime: LocalDateTime?,
+        stopTime: LocalDateTime?
+    ): Boolean {
+        return if (startTime == null) {
+            stopTime?.isAfter(timeEntryDay.date.atStartOfDay()) ?: true
+        } else {
+            if (stopTime == null) {
+                startTime.isBefore(timeEntryDay.date.atStartOfDay())
+            } else {
+                stopTime.isAfter(timeEntryDay.date.atStartOfDay()) &&
+                        startTime.isBefore(timeEntryDay.date.atStartOfDay())
+            }
+        }
     }
 
     override suspend fun addTimeEntry(timeEntry: TimeEntry) {

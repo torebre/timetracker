@@ -23,19 +23,19 @@ fun PieChartReport(reportsModel: ReportsModel) {
 }
 
 
-class PieChartReportParameterProvider : PreviewParameterProvider<ReportsModel.ReportsUiState> {
-    override val values = sequenceOf(ReportsModel.ReportsUiState(pieChartData = ReportsModel.PieChartData(
+class PieChartReportParameterProvider : PreviewParameterProvider<ReportsUiState> {
+    override val values = sequenceOf(ReportsUiState(pieChartData = PieChartData(
         listOf(
-            ReportsModel.PieChartEntry(1, 20, Color.Red),
-            ReportsModel.PieChartEntry(2, 30, Color.Green),
-            ReportsModel.PieChartEntry(3, 25, Color.Yellow))
+            PieChartEntry(1, 20, Color.Red),
+            PieChartEntry(2, 30, Color.Green),
+            PieChartEntry(3, 25, Color.Yellow))
     )))
 
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PieChartReport(@PreviewParameter(PieChartReportParameterProvider::class) reportsUiState: ReportsModel.ReportsUiState) {
+fun PieChartReport(@PreviewParameter(PieChartReportParameterProvider::class) reportsUiState: ReportsUiState) {
     val backgroundColour = MaterialTheme.colors.background
 
     Canvas(modifier = Modifier.size(100.dp)) {

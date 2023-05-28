@@ -29,6 +29,12 @@ data class TimeEntry(
         }
     }
 
+    fun getDurationMissingStopSetToNow(): Duration {
+        val timeEntryStop = stop ?: Instant.now()
+
+        return Duration.between(start, timeEntryStop)
+    }
+
 }
 
 
@@ -107,7 +113,14 @@ data class TaskWithTimeEntries(
         entityColumn = "tagId",
         associateBy = Junction(TagTasksCrossRef::class)
     )
-    val tags: List<Tag>
+    val tags: List<Tag>,
+
+    @Relation(
+        parentColumn = "taskId",
+        entityColumn = "taskId"
+    )
+    val timeEntriesDay: List<TimeEntryDay>
+
 )
 
 data class TagWithTaskEntries(

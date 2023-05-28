@@ -2,14 +2,15 @@ package com.kjipo.timetracker
 
 import android.graphics.Color
 import com.kjipo.timetracker.database.AppDatabase
-import com.kjipo.timetracker.database.Converters
 import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.database.TagTasksCrossRef
 import com.kjipo.timetracker.database.Task
 import com.kjipo.timetracker.database.TimeEntry
+import com.kjipo.timetracker.database.TimeEntryDay
 import timber.log.Timber
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -85,6 +86,16 @@ fun addTestData(appDatabase: AppDatabase) {
         addTimeEntry(it, appDatabase)
     }
 
+    val timentryDay =
+        TimeEntryDay(0, task.taskId, LocalDate.of(2023, 2, 5), Duration.ofMinutes(10)).also {
+            addTimeEntryDay(it, appDatabase)
+        }
+
+    val timentryDay2 =
+        TimeEntryDay(0, task3.taskId, LocalDate.of(2023, 4, 20), Duration.ofHours(2)).also {
+            addTimeEntryDay(it, appDatabase)
+        }
+
     addTagToTask(tag, task, appDatabase)
     addTagToTask(tag2, task, appDatabase)
     addTagToTask(tag3, task3, appDatabase)
@@ -96,26 +107,30 @@ fun addTestData(appDatabase: AppDatabase) {
 }
 
 
-private fun addProject(project: Project, appDatabase: AppDatabase) {
+fun addProject(project: Project, appDatabase: AppDatabase) {
     project.projectId = appDatabase.projectDao().insertProject(project)
 }
 
-private fun setProjectForTask(project: Project, task: Task, appDatabase: AppDatabase) {
+fun setProjectForTask(project: Project, task: Task, appDatabase: AppDatabase) {
     appDatabase.taskDao().updateTask(task.copy(projectId = project.projectId))
 }
 
-private fun addTag(tag: Tag, appDatabase: AppDatabase) {
+fun addTag(tag: Tag, appDatabase: AppDatabase) {
     tag.tagId = appDatabase.tagDao().insertTag(tag)
 }
 
-private fun addTagToTask(tag: Tag, task: Task, appDatabase: AppDatabase) {
+fun addTagToTask(tag: Tag, task: Task, appDatabase: AppDatabase) {
     appDatabase.taskDao().insertTaskAndTagCrossRef(TagTasksCrossRef(tag.tagId, task.taskId))
 }
 
-private fun addTask(task: Task, appDatabase: AppDatabase) {
+fun addTask(task: Task, appDatabase: AppDatabase) {
     task.taskId = appDatabase.taskDao().insertTask(task)
 }
 
-private fun addTimeEntry(timeEntry: TimeEntry, appDatabase: AppDatabase) {
+fun addTimeEntry(timeEntry: TimeEntry, appDatabase: AppDatabase) {
     timeEntry.timeEntryId = appDatabase.timeEntryDao().insertTimeEntry(timeEntry)
+}
+
+fun addTimeEntryDay(timeEntryDay: TimeEntryDay, appDatabase: AppDatabase) {
+    timeEntryDay.id = appDatabase.timeEntryDao().insertTimeEntryDay(timeEntryDay)
 }

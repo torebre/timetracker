@@ -17,11 +17,11 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import java.io.File
 
 
-class ReportScreenInput(uiState: ReportsModel.ReportsUiState)
+class ReportScreenInput(uiState: ReportsUiState)
 
 
 class ReportScreenInputParameterProvider : PreviewParameterProvider<ReportScreenInput> {
-    override val values = sequenceOf(ReportScreenInput(ReportsModel.ReportsUiState()))
+    override val values = sequenceOf(ReportScreenInput(ReportsUiState()))
 }
 
 
@@ -33,15 +33,17 @@ fun ReportScreen(reportsModel: ReportsModel) {
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun ReportScreen(@PreviewParameter(PreviewParameterProvider::class) reportScreenInput: ReportScreenInput) {
     val context = LocalContext.current
-    val state = rememberDateRangePickerState()
+//    val state = rememberDateRangePickerState()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        DateRangePicker(state = state, modifier = Modifier.weight(1f))
+//        DateRangePicker(state = state, modifier = Modifier.weight(1f))
+
+
+
 
         // TODO Get file to export to
 

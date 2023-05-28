@@ -7,7 +7,7 @@ import androidx.room.TypeConverters
 @Database(
     entities = [TimeEntry::class, Task::class, Tag::class,
         TimeEntryTaskCrossRef::class, TagTasksCrossRef::class,
-        TimeEntryDay::class, Project::class], version = 6
+        TimeEntryDay::class, Project::class], version = 7
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
