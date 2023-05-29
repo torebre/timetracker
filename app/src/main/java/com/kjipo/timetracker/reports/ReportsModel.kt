@@ -4,9 +4,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
+import com.kjipo.timetracker.database.TimeEntry
+import com.kjipo.timetracker.database.TimeEntryDay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,16 +33,11 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val startAndStopTime = when (timeRange) {
                 SelectedTimeRange.DAY -> {
-                    val today = LocalDate.now()
-                    DateRange(today.atStartOfDay(), today.atTime(23, 59, 59))
+                    getDayRange()
                 }
 
                 SelectedTimeRange.WEEK -> {
-                    val today = LocalDate.now()
-                    val startOfWeek =
-                        LocalDate.now().minusDays(today.dayOfWeek.value - 1L)
-                    val endOfWeek = today.plusDays(DayOfWeek.SUNDAY.value - today.dayOfWeek.value.toLong())
-                    DateRange(startOfWeek.atStartOfDay(), endOfWeek.atTime(23, 59, 59))
+                    getWeekRange()
                 }
 
                 SelectedTimeRange.CUSTOM -> {
@@ -56,6 +52,8 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
                 startAndStopTime.stopTime
             )
 
+            Timber.tag("Report").d("Number of time entries: ${timeEntries.size}")
+
             viewModelState.update {
                 it.copy(
                     selectedTimeRange = timeRange,
@@ -67,53 +65,19 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     private suspend fun transformTimeEntriesToProjectSummaries(tasksWithTimeEntries: List<TaskWithTimeEntries>): List<ProjectSummary> {
-        var noProjectDuration = Duration.ofSeconds(0)
         val projectIdDurationMap = mutableMapOf<Long, Duration>()
-        val projectIdProjectMap = mutableMapOf<Long, Project>()
 
         for (tasksWithTimeEntry in tasksWithTimeEntries) {
             for (timeEntry in tasksWithTimeEntry.timeEntries) {
-                taskRepository.getTask(timeEntry.taskId)?.let { task ->
-                    if (task.projectId != null) {
-                        val project = taskRepository.getProject(task.projectId)
-
-                        if (project == null) {
-                            // TODO This is an error if it happens
-                            noProjectDuration =
-                                noProjectDuration.plus(timeEntry.getDurationMissingStopSetToNow())
-                        } else {
-                            projectIdProjectMap.putIfAbsent(project.projectId, project)
-                            if (projectIdDurationMap.contains(project.projectId)) {
-                                projectIdDurationMap[project.projectId] =
-                                    projectIdDurationMap[project.projectId]!!.plus(timeEntry.getDurationMissingStopSetToNow())
-                            }
-                        }
-                    } else {
-                        noProjectDuration =
-                            noProjectDuration.plus(timeEntry.getDurationMissingStopSetToNow())
-                    }
-                }
+                addDurationsFromTimeEntry(
+                    tasksWithTimeEntry,
+                    timeEntry,
+                    projectIdDurationMap,
+                )
             }
 
             for (timeEntryDay in tasksWithTimeEntry.timeEntriesDay) {
-                taskRepository.getTask(timeEntryDay.taskId)?.let { task ->
-                    if (task.projectId != null) {
-                        val project = taskRepository.getProject(task.projectId)
-
-                        if (project == null) {
-                            noProjectDuration =
-                                noProjectDuration.plus(timeEntryDay.duration)
-                        } else {
-                            if (projectIdDurationMap.contains(project.projectId)) {
-                                projectIdDurationMap[project.projectId] =
-                                    projectIdDurationMap[project.projectId]!!.plus(timeEntryDay.duration)
-                            }
-                        }
-                    } else {
-                        noProjectDuration =
-                            noProjectDuration.plus(timeEntryDay.duration)
-                    }
-                }
+                addDurationsFromTimeEntryDay(tasksWithTimeEntry, timeEntryDay, projectIdDurationMap)
             }
         }
 
@@ -123,22 +87,96 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
 
         val totalDurationInMilliseconds = projectIdDurationMap.values.reduce { value, next ->
             value.plus(next)
-        }.toMillis() + noProjectDuration.toMillis()
+        }.toMillis()
 
-        return projectIdDurationMap.map { entry ->
-            projectIdProjectMap[entry.key]?.let { project ->
-                ProjectSummary(
-                    project.title,
-                    entry.value,
-                    entry.value.toMillis().toDouble().div(totalDurationInMilliseconds)
-                )
+        val projectSummaries = projectIdDurationMap.map { entry ->
+            ProjectSummary(
+                entry.key,
+                "",
+                entry.value,
+                entry.value.toMillis().toDouble().div(totalDurationInMilliseconds)
+            )
+        }
+
+        return addTitlesToProjectSummaries(projectSummaries)
+    }
+
+    private suspend fun addTitlesToProjectSummaries(projectDurations: List<ProjectSummary>): List<ProjectSummary> {
+        val projectIdProjectMap = taskRepository.getProjects().map {
+            Pair(it.projectId, it)
+        }.toMap()
+
+        return projectDurations.map { projectSummary ->
+            if (projectSummary.projectId == noProjectId) {
+                projectSummary.copy(title = "No project")
+            } else {
+                projectIdProjectMap[projectSummary.projectId]?.let {
+                    projectSummary.copy(title = it.title)
+
+                }
             }
         }.filterNotNull()
+    }
+
+    private fun addDurationsFromTimeEntryDay(
+        task: TaskWithTimeEntries,
+        timeEntryDay: TimeEntryDay,
+        projectIdDurationMap: MutableMap<Long, Duration>
+    ) {
+        if (task.task.projectId == null) {
+            addDurationToProject(
+                noProjectId,
+                timeEntryDay.duration,
+                projectIdDurationMap
+            )
+        } else {
+            addDurationToProject(
+                task.task.projectId,
+                timeEntryDay.duration,
+                projectIdDurationMap
+            )
+        }
+    }
+
+    private fun addDurationsFromTimeEntry(
+        task: TaskWithTimeEntries, timeEntry: TimeEntry,
+        projectIdDurationMap: MutableMap<Long, Duration>
+    ) {
+
+        Timber.tag("Report").d("Task ID: ${task.task.taskId}. Project ID: ${task.task.projectId}. Duration: ${timeEntry.getDurationMissingStopSetToNow()}")
+
+        if (task.task.projectId == null) {
+            addDurationToProject(
+                noProjectId,
+                timeEntry.getDurationMissingStopSetToNow(),
+                projectIdDurationMap
+            )
+        } else {
+            addDurationToProject(
+                task.task.projectId,
+                timeEntry.getDurationMissingStopSetToNow(),
+                projectIdDurationMap
+            )
+        }
+    }
+
+    private fun addDurationToProject(
+        projectId: Long,
+        duration: Duration,
+        projectIdDurationMap: MutableMap<Long, Duration>
+    ) {
+        if (projectIdDurationMap.contains(projectId)) {
+            projectIdDurationMap[projectId] =
+                projectIdDurationMap[projectId]!!.plus(duration)
+        } else {
+            projectIdDurationMap[projectId] = duration
+        }
 
     }
 
-
     companion object {
+
+        const val noProjectId = -1L
 
         fun provideFactory(taskRepository: TaskRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
@@ -148,7 +186,23 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
                 }
             }
 
+
+        fun getDayRange(): DateRange {
+            val today = LocalDate.now()
+            return DateRange(today.atStartOfDay(), today.atTime(23, 59, 59))
+        }
+
+        fun getWeekRange(): DateRange {
+            val today = LocalDate.now()
+            val startOfWeek =
+                LocalDate.now().minusDays(today.dayOfWeek.value - 1L)
+            val endOfWeek = today.plusDays(DayOfWeek.SUNDAY.value - today.dayOfWeek.value.toLong())
+
+            return DateRange(startOfWeek.atStartOfDay(), endOfWeek.atTime(23, 59, 59))
+        }
+
     }
+
 
 }
 
@@ -164,7 +218,9 @@ data class ReportsUiState(
 )
 
 data class ProjectSummary(
-    val title: String, val duration: Duration,
+    val projectId: Long,
+    val title: String,
+    val duration: Duration,
     val percentage: Double
 )
 

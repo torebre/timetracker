@@ -108,63 +108,11 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
     ): List<TaskWithTimeEntries> {
         val taskWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries()
 
-        return taskWithTimeEntries.filter { task ->
-            task.timeEntriesDay.any { timeEntryDay ->
-                shouldTimeEntryDayBeIncluded(timeEntryDay, startTime, stopTime)
-            } ||
-                    task.timeEntries.any { timeEntry ->
-                        shouldTimeEntryBeIncluded(timeEntry, startTime, stopTime)
-                    }
+        return taskWithTimeEntries.filter {
+            shouldTimeEntryBeIncluded(it, startTime, stopTime)
         }
     }
 
-    private fun shouldTimeEntryBeIncluded(
-        timeEntry: TimeEntry,
-        startTime: LocalDateTime?,
-        stopTime: LocalDateTime?
-    ): Boolean {
-        val duration = timeEntry.getDuration()
-            ?: Duration.ofSeconds(Instant.now().epochSecond - timeEntry.start.epochSecond)
-
-        // TODO Be more consistent in using Instant or LocalDateTime
-        val timeEntryStop = LocalDateTime.ofEpochSecond(
-            timeEntry.start.epochSecond + duration.seconds,
-            0,
-            ZoneId.systemDefault().rules.getOffset(Instant.now())
-        )
-        val timeEntryStart = LocalDateTime.ofInstant(
-            timeEntry.start,
-            ZoneId.systemDefault().rules.getOffset(Instant.now())
-        )
-
-        return if (startTime == null) {
-            stopTime?.isAfter(timeEntryStop) ?: true
-        } else {
-            if (stopTime == null) {
-                startTime.isBefore(timeEntryStart)
-            } else {
-                timeEntryStart.isAfter(startTime) && timeEntryStop.isBefore(stopTime)
-            }
-        }
-    }
-
-
-    private fun shouldTimeEntryDayBeIncluded(
-        timeEntryDay: TimeEntryDay,
-        startTime: LocalDateTime?,
-        stopTime: LocalDateTime?
-    ): Boolean {
-        return if (startTime == null) {
-            stopTime?.isAfter(timeEntryDay.date.atStartOfDay()) ?: true
-        } else {
-            if (stopTime == null) {
-                startTime.isBefore(timeEntryDay.date.atStartOfDay())
-            } else {
-                stopTime.isAfter(timeEntryDay.date.atStartOfDay()) &&
-                        startTime.isBefore(timeEntryDay.date.atStartOfDay())
-            }
-        }
-    }
 
     override suspend fun addTimeEntry(timeEntry: TimeEntry) {
         appDatabase.timeEntryDao().insertTimeEntry(timeEntry)
@@ -268,6 +216,67 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun removeProject(taskId: Long, projectId: Long) {
         TODO("Not yet implemented")
+    }
+
+    companion object {
+
+        internal fun shouldTimeEntryBeIncluded(task: TaskWithTimeEntries, startTime: LocalDateTime?, stopTime: LocalDateTime?): Boolean {
+            return task.timeEntriesDay.any { timeEntryDay ->
+                shouldTimeEntryDayBeIncluded(timeEntryDay, startTime, stopTime)
+            } ||
+                    task.timeEntries.any { timeEntry ->
+                        shouldTimeEntryBeIncluded(timeEntry, startTime, stopTime)
+                    }
+
+        }
+
+        internal fun shouldTimeEntryBeIncluded(
+            timeEntry: TimeEntry,
+            startTime: LocalDateTime?,
+            stopTime: LocalDateTime?
+        ): Boolean {
+            val duration = timeEntry.getDuration()
+                ?: Duration.ofSeconds(Instant.now().epochSecond - timeEntry.start.epochSecond)
+
+            // TODO Be more consistent in using Instant or LocalDateTime
+            val timeEntryStop = LocalDateTime.ofEpochSecond(
+                timeEntry.start.epochSecond + duration.seconds,
+                0,
+                ZoneId.systemDefault().rules.getOffset(Instant.now())
+            )
+            val timeEntryStart = LocalDateTime.ofInstant(
+                timeEntry.start,
+                ZoneId.systemDefault().rules.getOffset(Instant.now())
+            )
+
+            return if (startTime == null) {
+                stopTime?.isAfter(timeEntryStop) ?: true
+            } else {
+                if (stopTime == null) {
+                    startTime.isBefore(timeEntryStart)
+                } else {
+                    timeEntryStart.isAfter(startTime) && timeEntryStop.isBefore(stopTime)
+                }
+            }
+        }
+
+
+        internal fun shouldTimeEntryDayBeIncluded(
+            timeEntryDay: TimeEntryDay,
+            startTime: LocalDateTime?,
+            stopTime: LocalDateTime?
+        ): Boolean {
+            return if (startTime == null) {
+                stopTime?.isAfter(timeEntryDay.date.atStartOfDay()) ?: true
+            } else {
+                if (stopTime == null) {
+                    startTime.isBefore(timeEntryDay.date.atStartOfDay())
+                } else {
+                    stopTime.isAfter(timeEntryDay.date.atStartOfDay()) &&
+                            startTime.isBefore(timeEntryDay.date.atTime(23, 59, 59))
+                }
+            }
+        }
     }
 
 

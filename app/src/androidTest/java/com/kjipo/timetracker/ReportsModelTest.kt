@@ -1,6 +1,7 @@
 package com.kjipo.timetracker
 
 import android.content.Context
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.kjipo.timetracker.database.AppDatabase
@@ -15,10 +16,13 @@ import com.kjipo.timetracker.database.TimeEntryDay
 import com.kjipo.timetracker.reports.ReportsModel
 import com.kjipo.timetracker.reports.SelectedTimeRange
 import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasSize
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import timber.log.Timber
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -31,8 +35,13 @@ class ReportsModelTest {
     private lateinit var database: AppDatabase
     private lateinit var context: Context
 
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
     @Before
     fun createDatabase() {
+        Timber.plant(Timber.DebugTree())
+
         context = ApplicationProvider.getApplicationContext()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         timeEntryDao = database.timeEntryDao()
@@ -55,7 +64,7 @@ class ReportsModelTest {
         val task = Task(0, "Task 1").also { addTask(it, database) }
             .also { setProjectForTask(project, it, database) }
         val task2 = Task(0, "Task 2").also { addTask(it, database) }
-            .also { setProjectForTask(project, it, database) }
+            .also { setProjectForTask(project2, it, database) }
 
         val taskRepository = TaskRepositoryImpl(database)
 
@@ -75,16 +84,23 @@ class ReportsModelTest {
             }
 
         val reportsModel = ReportsModel(taskRepository)
-
         reportsModel.setSelectedTimeRange(SelectedTimeRange.WEEK)
 
-        Thread.sleep(1000)
-
+        composeTestRule.waitForIdle()
         val projectSummaryList = reportsModel.uiState.value.projectSummaries
 
         assertThat(projectSummaryList, hasSize(2))
 
+        val projectIdProjectMap = projectSummaryList.map { Pair(it.projectId, it) }.toMap()
 
+        assertThat(
+            projectIdProjectMap[project.projectId]!!.duration,
+            equalTo(Duration.between(startTime, stopTime))
+        )
+        assertThat(
+            projectIdProjectMap[project2.projectId]!!.duration,
+            equalTo(Duration.ofMinutes(10))
+        )
     }
 
 
