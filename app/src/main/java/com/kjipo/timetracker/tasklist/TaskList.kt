@@ -1,6 +1,5 @@
 package com.kjipo.timetracker.tasklist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,20 +12,14 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kjipo.timetracker.database.TimeEntry
@@ -139,9 +132,10 @@ fun TaskList(taskListInputParameters: TaskListInputParameters) {
                 taskUi.id
             }) { task ->
             Surface(
-                modifier = Modifier.padding(bottom = 8.dp, start = 3.dp, end = 3.dp),
+                modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
+                shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+
             ) {
                 TaskRow(
                     TaskRowInput(
@@ -176,24 +170,23 @@ class TaskRowInput(
 
 @Composable
 fun TaskRow(taskRowInput: TaskRowInput) {
-    Column() {
+    Column(modifier = Modifier.padding(8.dp)) {
+        Text(
+            modifier = Modifier
+                .clickable {
+                    taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
+                }
+                .width(120.dp),
+            style = MaterialTheme.typography.headlineSmall,
+            text = taskRowInput.task.title
+        )
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Text(
-                modifier = Modifier
-                    .clickable {
-                        taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
-                    }
-                    .width(120.dp)
-                    .padding(start = 5.dp),
-                text = taskRowInput.task.title
-            )
-
                 Text(
                     text = formatDuration(taskRowInput.task.computeTotalDuration())
                 )
@@ -227,14 +220,20 @@ fun TaskRow(taskRowInput: TaskRowInput) {
         }
 
         Row {
-            taskRowInput.task.tags.forEach { tagUi ->
-                Tag(tagUi)
+            taskRowInput.task.tags.forEachIndexed { index, tagUi ->
+                val modifier = if(index == 0) {
+                    Modifier.padding()
+                }
+                else {
+                    Modifier.padding(start = 5.dp)
+                }
+                Tag(tagUi, modifier)
             }
         }
 
         Row(modifier = Modifier.padding(top = 5.dp)) {
             taskRowInput.task.project?.let {
-                Tag(it)
+                Tag(it, Modifier)
             }
         }
     }
@@ -252,19 +251,8 @@ private fun formatDuration(duration: Duration): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Tag(tagUi: TaskMarkUiElement) {
-//    AssistChip(modifier = Modifier
-//        .background(
-//            tagUi.colour ?: MaterialTheme.colorScheme.background
-//        )
-//        .padding(1.dp),
-//        onClick = {
-//            // Do nothing
-//        },
-//        label = { Text(tagUi.title) },
-//        trailingIcon = { Icons.Default.Close })
-
-    Badge(containerColor = tagUi.colour ?: Color.White) {
+fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier) {
+    Badge(modifier = modifier, containerColor = tagUi.colour ?: Color.White) {
         Text(tagUi.title)
     }
 }

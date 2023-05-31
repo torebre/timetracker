@@ -43,7 +43,7 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
                     initialLoading = false
                 )
             ),
-            { taskName, tags ->
+            { taskName, tags, project ->
                 // Do nothing
             },
             {
@@ -80,7 +80,7 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 
 class TaskScreenInput(
     val taskScreenUiState: State<TaskScreenUiState>,
-    val saveData: (String, List<TaskMarkUiElement>) -> Unit,
+    val saveData: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
     val navigateToTimeEditScreen: (Long) -> Unit,
     val deleteTimeEntry: (Long) -> Unit
 )
@@ -88,7 +88,7 @@ class TaskScreenInput(
 @Composable
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
-    saveTask: (String, List<TaskMarkUiElement>) -> Unit,
+    saveTask: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
     navigateToTimeEditScreen: (Long) -> Unit,
     deleteTimeEntry: (Long) -> Unit
 ) {
@@ -132,6 +132,14 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         mutableStateOf(false)
     }
 
+    val expandedProject = remember {
+        mutableStateOf(false)
+    }
+
+    val selectedProject = remember {
+        mutableStateOf<TaskMarkUiElement?>(null)
+    }
+
     Column {
         Row {
             TextField(
@@ -171,6 +179,24 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             )
         }
 
+        Button(onClick = {
+           expandedProject.value != expandedProject.value
+        },
+        enabled = taskUiState.availableProjects.isNotEmpty()) {
+            Text("Set project")
+        }
+
+        if(expandedProject.value) {
+            TagSelectionMenu(
+                availableTags = taskUiState.availableProjects,
+                addTag = { tagUi ->
+                    selectedProject.value = tagUi
+                    expandedProject.value = false
+                },
+                expanded
+            )
+        }
+
         for (timeEntry in taskUiState.timeEntries) {
             LazyRow {
                 item {
@@ -189,7 +215,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         ) {
             Button(
                 onClick = {
-                    taskScreenInput.saveData(inputText.value, usedTags.value)
+                    taskScreenInput.saveData(inputText.value, usedTags.value, selectedProject.value)
                 },
                 enabled = inputText.value.isNotBlank() && (inputText.value != taskUiState.taskUi.taskName || !usedTags.value.containsAll(
                     taskUiState.tags
@@ -293,12 +319,9 @@ fun TagSelectionMenu(
                     onClick = {
                         addTag(tagUi)
                     })
-
             }
         }
 
-
     }
-
 
 }

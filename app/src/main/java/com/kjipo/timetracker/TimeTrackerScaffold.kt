@@ -256,8 +256,8 @@ private fun GoToTaskScreen(
             )
         )
 
-        TaskScreen(taskScreenModel, { title, tags ->
-            taskScreenModel.saveTask(title, tags)
+        TaskScreen(taskScreenModel, { title, tags, project ->
+            taskScreenModel.saveTask(title, tags, project)
         },
             { timeEntryId ->
                 appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")

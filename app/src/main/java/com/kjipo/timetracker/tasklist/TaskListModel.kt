@@ -91,16 +91,17 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
                 tasks = taskRepository.getTasksWithTimeEntries()
                     .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
         }
-
     }
-
 
     private fun transformTaskToUiTask(task: TaskWithTimeEntries): TaskUi {
         return TaskUi(task.task.taskId,
             task.task.title,
             task.timeEntries,
             task.timeEntries.computeTotalDuration(),
-            tags = task.tags.map { TaskMarkUiElement(it) })
+            tags = task.tags.map { TaskMarkUiElement(it) },
+            project = task.project?.let {
+                TaskMarkUiElement(it)
+            })
     }
 
     companion object {

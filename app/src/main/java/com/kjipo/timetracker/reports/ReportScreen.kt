@@ -2,6 +2,8 @@ package com.kjipo.timetracker.reports
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material3.DateRangePicker
@@ -17,7 +19,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import java.io.File
 
 
-class ReportScreenInput(uiState: ReportsUiState)
+class ReportScreenInput(val uiState: ReportsUiState)
 
 
 class ReportScreenInputParameterProvider : PreviewParameterProvider<ReportScreenInput> {
@@ -39,22 +41,43 @@ fun ReportScreen(@PreviewParameter(PreviewParameterProvider::class) reportScreen
     val context = LocalContext.current
 //    val state = rememberDateRangePickerState()
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    val state = rememberLazyListState()
+    Column {
+
+        LazyColumn(state = state) {
+            for (projectSummary in reportScreenInput.uiState.projectSummaries) {
+                item {
+                    ProjectSummaryScreen(projectSummary)
+
+                }
+
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
 //        DateRangePicker(state = state, modifier = Modifier.weight(1f))
 
 
+            reportScreenInput.uiState.projectSummaries
 
 
-        // TODO Get file to export to
+            // TODO Get file to export to
 
-        // TODO Just here for testing
+            // TODO Just here for testing
 //    CalendarComponent(calendarUiState = CalendarUiState())
 
-        val fileToExportTo = File(context.cacheDir, "export_file_temp.zip")
-        Button(onClick = { exportData(fileToExportTo, context) }) {
-            Text("Export")
+            val fileToExportTo = File(context.cacheDir, "export_file_temp.zip")
+            Button(onClick = { exportData(fileToExportTo, context) }) {
+                Text("Export")
+            }
         }
-    }
 
+    }
 }
 
+@Composable
+fun ProjectSummaryScreen(projectSummary: ProjectSummary) {
+    Text(projectSummary.title)
+    Text("${projectSummary.duration}")
+    Text("${projectSummary.percentage}")
+}

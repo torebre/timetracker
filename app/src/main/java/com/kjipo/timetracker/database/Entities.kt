@@ -119,7 +119,13 @@ data class TaskWithTimeEntries(
         parentColumn = "taskId",
         entityColumn = "taskId"
     )
-    val timeEntriesDay: List<TimeEntryDay>
+    val timeEntriesDay: List<TimeEntryDay>,
+
+    @Relation(
+        parentColumn = "projectId",
+        entityColumn = "projectId"
+    )
+    val project: Project?
 
 )
 

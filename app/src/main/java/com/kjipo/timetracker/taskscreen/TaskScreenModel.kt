@@ -3,6 +3,7 @@ package com.kjipo.timetracker.taskscreen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
@@ -41,10 +42,13 @@ class TaskScreenModel(
                 // All tags are available for selection when the task is new
                 val availableTags = taskRepository.getTags()
                     .map { TaskMarkUiElement(it) }
+                val projects = taskRepository.getProjects()
+                    .map { TaskMarkUiElement(it) }
                 viewModelState.update {
                     it.copy(
                         initialLoading = false,
-                        availableTags = availableTags
+                        availableTags = availableTags,
+                        availableProjects = projects
                     )
                 }
             }
@@ -52,35 +56,37 @@ class TaskScreenModel(
     }
 
 
-    fun saveTask(taskName: String, tags: List<TaskMarkUiElement>) {
+    fun saveTask(taskName: String, tags: List<TaskMarkUiElement>, project: TaskMarkUiElement?) {
         viewModelScope.launch(Dispatchers.IO) {
             if (taskId == 0L) {
                 taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }).taskId
             } else {
-                taskRepository.saveTask(taskId, taskName, tags.map { it.elementId })
+                taskRepository.saveTask(taskId, taskName, tags.map { it.elementId }, project?.elementId)
             }
             loadTask()
         }
     }
 
     private suspend fun loadTask() {
-        taskRepository.getTags().forEach { tag ->
-            taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
-                Timber.tag("TaskScreenModel").i(
-                    "Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${
-                        tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")
-                    }"
-                )
-            }
-        }
+//        taskRepository.getTags().forEach { tag ->
+//            taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
+//                Timber.tag("TaskScreenModel").i(
+//                    "Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${
+//                        tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")
+//                    }"
+//                )
+//            }
+//        }
 
         taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
             val tagIds = taskWithTimeEntries.tags.map { it.tagId }
             val availableTags = taskRepository.getTags()
                 .filter { !tagIds.contains(it.tagId) }
                 .map { TaskMarkUiElement(it) }
+            val availableProjects = taskRepository.getProjects()
+                .map { TaskMarkUiElement(it) }
 
-            Timber.tag("TaskScreenModel").i("Tags: ${tagIds}")
+//            Timber.tag("TaskScreenModel").i("Tags: ${tagIds}")
 
             viewModelState.update { taskScreenUiState ->
                 taskScreenUiState.copy(
@@ -88,7 +94,8 @@ class TaskScreenModel(
                     timeEntries = taskWithTimeEntries.timeEntries.map { TimeEntryUi(it) },
                     tags = taskWithTimeEntries.tags.map { TaskMarkUiElement(it) },
                     initialLoading = false,
-                    availableTags = availableTags
+                    availableTags = availableTags,
+                    availableProjects = availableProjects
                 )
             }
         }
@@ -155,12 +162,11 @@ data class TimeEntryUi(
 
 }
 
-
-
 data class TaskScreenUiState(
     val taskUi: TaskUi = TaskUi(),
     val timeEntries: List<TimeEntryUi> = emptyList(),
     val tags: List<TaskMarkUiElement> = emptyList(),
     val initialLoading: Boolean = true,
-    val availableTags: List<TaskMarkUiElement> = emptyList()
+    val availableTags: List<TaskMarkUiElement> = emptyList(),
+    val availableProjects: List<TaskMarkUiElement> = emptyList()
 )

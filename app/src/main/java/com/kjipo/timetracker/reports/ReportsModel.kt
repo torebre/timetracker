@@ -28,6 +28,10 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         viewModelState.value
     )
 
+    init {
+        setSelectedTimeRange(SelectedTimeRange.DAY)
+    }
+
 
     fun setSelectedTimeRange(timeRange: SelectedTimeRange) {
         viewModelScope.launch(Dispatchers.IO) {

@@ -35,7 +35,7 @@ interface TaskRepository {
     suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
 
     suspend fun updateTimeEntry(timeEntry: TimeEntry)
-    suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>)
+    suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>, projectId: Long?)
 
     suspend fun getTags(): List<Tag>
 
@@ -133,9 +133,9 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
     }
 
     @Transaction
-    override suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>) {
+    override suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>, projectId: Long?) {
         appDatabase.taskDao().getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
-            appDatabase.taskDao().updateTask(taskWithTimeEntries.task.copy(title = taskName))
+            appDatabase.taskDao().updateTask(taskWithTimeEntries.task.copy(title = taskName, projectId = projectId))
 
             val tagsToRemove = taskWithTimeEntries.tags.filter { !tagIds.contains(it.tagId) }
             tagsToRemove.forEach { tag ->

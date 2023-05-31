@@ -57,7 +57,6 @@ fun addTestData(appDatabase: AppDatabase) {
     val task = Task(0, "Task 1").also { addTask(it, appDatabase) }
         .also { setProjectForTask(project, it, appDatabase) }
     val task2 = Task(0, "Task 2").also { addTask(it, appDatabase) }
-        .also { setProjectForTask(project, it, appDatabase) }
     val task3 = Task(0, "Task 3").also { addTask(it, appDatabase) }
         .also { setProjectForTask(project2, it, appDatabase) }
 
@@ -86,13 +85,25 @@ fun addTestData(appDatabase: AppDatabase) {
         addTimeEntry(it, appDatabase)
     }
 
-    val timentryDay =
+    val timeEntry4 = TimeEntry(
+        0, task.taskId, LocalDateTime.now().minusHours(2).toInstant(ZoneOffset.UTC),
+        LocalDateTime.now().toInstant(ZoneOffset.UTC)
+    ).also {
+        addTimeEntry(it, appDatabase)
+    }
+
+    val timeEntryDay =
         TimeEntryDay(0, task.taskId, LocalDate.of(2023, 2, 5), Duration.ofMinutes(10)).also {
             addTimeEntryDay(it, appDatabase)
         }
 
-    val timentryDay2 =
+    val timeEntryDay2 =
         TimeEntryDay(0, task3.taskId, LocalDate.of(2023, 4, 20), Duration.ofHours(2)).also {
+            addTimeEntryDay(it, appDatabase)
+        }
+
+    val timeEntryDay3 =
+        TimeEntryDay(0, task.taskId, LocalDate.now(), Duration.ofHours(2)).also {
             addTimeEntryDay(it, appDatabase)
         }
 
