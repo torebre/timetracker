@@ -61,7 +61,12 @@ class TaskScreenModel(
             if (taskId == 0L) {
                 taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }).taskId
             } else {
-                taskRepository.saveTask(taskId, taskName, tags.map { it.elementId }, project?.elementId)
+                taskRepository.saveTask(
+                    taskId,
+                    taskName,
+                    tags.map { it.elementId },
+                    project?.elementId
+                )
             }
             loadTask()
         }
@@ -86,7 +91,7 @@ class TaskScreenModel(
             val availableProjects = taskRepository.getProjects()
                 .map { TaskMarkUiElement(it) }
 
-//            Timber.tag("TaskScreenModel").i("Tags: ${tagIds}")
+            Timber.tag("TaskScreenModel").i("Projects: ${availableProjects}")
 
             viewModelState.update { taskScreenUiState ->
                 taskScreenUiState.copy(
@@ -95,7 +100,8 @@ class TaskScreenModel(
                     tags = taskWithTimeEntries.tags.map { TaskMarkUiElement(it) },
                     initialLoading = false,
                     availableTags = availableTags,
-                    availableProjects = availableProjects
+                    availableProjects = availableProjects,
+                    project = taskWithTimeEntries.project?.let { TaskMarkUiElement(it) }
                 )
             }
         }
@@ -168,5 +174,6 @@ data class TaskScreenUiState(
     val tags: List<TaskMarkUiElement> = emptyList(),
     val initialLoading: Boolean = true,
     val availableTags: List<TaskMarkUiElement> = emptyList(),
-    val availableProjects: List<TaskMarkUiElement> = emptyList()
+    val availableProjects: List<TaskMarkUiElement> = emptyList(),
+    val project: TaskMarkUiElement? = null
 )

@@ -1,6 +1,5 @@
 package com.kjipo.timetracker.taskscreen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.*
@@ -8,10 +7,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults.inputChipColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.timeFormatter
-import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -114,8 +113,6 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         return
     }
 
-    Timber.tag("TaskScreen").i("${taskUiState.tags}")
-
     val inputText = remember {
         mutableStateOf(taskUiState.taskUi.taskName)
     }
@@ -137,7 +134,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
     }
 
     val selectedProject = remember {
-        mutableStateOf<TaskMarkUiElement?>(null)
+        mutableStateOf(taskUiState.project)
     }
 
     Column {
@@ -151,8 +148,13 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
         }
 
         Row {
-            usedTags.value.forEach { tagUi ->
-                Tag(tagUi) {
+            usedTags.value.forEachIndexed { index, tagUi ->
+                val modifier = if (index == 0) {
+                    Modifier
+                } else {
+                    Modifier.padding(start = 5.dp)
+                }
+                Tag(tagUi, modifier) {
                     usedTags.value -= tagUi
                     availableTags.value += tagUi
                 }
@@ -170,8 +172,8 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
 
         if (expanded.value) {
             TagSelectionMenu(
-                availableTags = taskUiState.availableTags,
-                addTag = { tagUi ->
+                availableElements = taskUiState.availableTags,
+                addElement = { tagUi ->
                     usedTags.value += tagUi
                     expanded.value = false
                 },
@@ -179,21 +181,31 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             )
         }
 
-        Button(onClick = {
-           expandedProject.value != expandedProject.value
-        },
-        enabled = taskUiState.availableProjects.isNotEmpty()) {
+        Row {
+            selectedProject.value?.let {
+                Tag(it, Modifier) {
+                    selectedProject.value = null
+                }
+            }
+        }
+
+        Button(
+            onClick = {
+                expandedProject.value = !expandedProject.value
+            },
+            enabled = taskUiState.availableProjects.isNotEmpty() && selectedProject.value == null
+        ) {
             Text("Set project")
         }
 
-        if(expandedProject.value) {
+        if (expandedProject.value) {
             TagSelectionMenu(
-                availableTags = taskUiState.availableProjects,
-                addTag = { tagUi ->
-                    selectedProject.value = tagUi
+                availableElements = taskUiState.availableProjects,
+                addElement = { projectElement ->
+                    selectedProject.value = projectElement
                     expandedProject.value = false
                 },
-                expanded
+                expandedProject
             )
         }
 
@@ -209,6 +221,15 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             }
         }
 
+        fun inputDirtyAndValid(): Boolean {
+            return inputText.value.isNotBlank()
+                    && (inputText.value != taskUiState.taskUi.taskName
+                    || !usedTags.value.containsAll(
+                taskUiState.tags
+            ) || !taskUiState.tags.containsAll(usedTags.value)
+                    || selectedProject.value != taskUiState.project)
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
@@ -217,15 +238,14 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 onClick = {
                     taskScreenInput.saveData(inputText.value, usedTags.value, selectedProject.value)
                 },
-                enabled = inputText.value.isNotBlank() && (inputText.value != taskUiState.taskUi.taskName || !usedTags.value.containsAll(
-                    taskUiState.tags
-                ) || !taskUiState.tags.containsAll(usedTags.value))
+                enabled = inputDirtyAndValid()
             ) {
                 Text("Save")
             }
         }
 
     }
+
 
 }
 
@@ -284,16 +304,18 @@ fun TimeEntryRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Tag(tagUi: TaskMarkUiElement, removeTag: () -> Unit) {
-    InputChip(modifier = Modifier
-        .background(
-            tagUi.colour ?: androidx.compose.material3.MaterialTheme.colorScheme.background
-        )
-        .padding(start = 2.dp),
+fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier, removeTag: () -> Unit) {
+    InputChip(modifier = modifier,
         selected = true,
+        enabled = true,
         onClick = {
             removeTag()
         },
+        colors = inputChipColors(
+            selectedContainerColor = tagUi.colour
+                ?: androidx.compose.material3.MaterialTheme.colorScheme.background
+
+        ),
         label = { Text(tagUi.title) },
         trailingIcon = { Icons.Default.Close })
 
@@ -302,8 +324,8 @@ fun Tag(tagUi: TaskMarkUiElement, removeTag: () -> Unit) {
 
 @Composable
 fun TagSelectionMenu(
-    availableTags: List<TaskMarkUiElement>,
-    addTag: (TaskMarkUiElement) -> Unit,
+    availableElements: List<TaskMarkUiElement>,
+    addElement: (TaskMarkUiElement) -> Unit,
     expanded: MutableState<Boolean>
 ) {
     Box(
@@ -312,12 +334,12 @@ fun TagSelectionMenu(
             .wrapContentSize(Alignment.TopStart)
     ) {
         DropdownMenu(expanded = expanded.value, onDismissRequest = { expanded.value = false }) {
-            availableTags.forEach { tagUi ->
+            availableElements.forEach { tagUi ->
                 DropdownMenuItem(text = {
                     Text(tagUi.title)
                 },
                     onClick = {
-                        addTag(tagUi)
+                        addElement(tagUi)
                     })
             }
         }
