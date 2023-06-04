@@ -67,6 +67,17 @@ fun TimeTrackerScaffold(
                             addTestData(appContainer.appDatabase)
                         }
                     })
+
+                NavigationDrawerItem(label = {
+                    Text("Clear database")
+                },
+                    selected = false,
+                    onClick = {
+                        scope.launch(Dispatchers.IO) {
+                            appContainer.appDatabase.clearAllTables()
+                        }
+                    })
+
             }
         })
     {

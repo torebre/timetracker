@@ -17,7 +17,11 @@ interface TaskRepository {
 
     suspend fun getTask(taskId: Long): Task?
 
-    suspend fun createTask(title: String = "", tags: List<Tag> = emptyList()): Task
+    suspend fun createTask(
+        title: String = "",
+        tags: List<Tag> = emptyList(),
+        project: Project?
+    ): Task
 
     suspend fun updateTask(task: Task)
 
@@ -84,8 +88,8 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
     }
 
     @Transaction
-    override suspend fun createTask(title: String, tags: List<Tag>): Task {
-        val newTask = Task(0, title)
+    override suspend fun createTask(title: String, tags: List<Tag>, project: Project?): Task {
+        val newTask = Task(0, title, projectId = project?.projectId)
         appDatabase.taskDao().insertTask(newTask).also { newTask.taskId = it }
         for (tag in tags) {
             addTag(newTask.taskId, tag.tagId)
@@ -107,6 +111,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         stopTime: LocalDateTime?
     ): List<TaskWithTimeEntries> {
         val taskWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries()
+
+        if (startTime == null && stopTime == null) {
+            return taskWithTimeEntries
+        }
 
         return taskWithTimeEntries.filter {
             shouldTimeEntryBeIncluded(it, startTime, stopTime)
@@ -133,9 +141,15 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
     }
 
     @Transaction
-    override suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>, projectId: Long?) {
+    override suspend fun saveTask(
+        taskId: Long,
+        taskName: String,
+        tagIds: List<Long>,
+        projectId: Long?
+    ) {
         appDatabase.taskDao().getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
-            appDatabase.taskDao().updateTask(taskWithTimeEntries.task.copy(title = taskName, projectId = projectId))
+            appDatabase.taskDao()
+                .updateTask(taskWithTimeEntries.task.copy(title = taskName, projectId = projectId))
 
             val tagsToRemove = taskWithTimeEntries.tags.filter { !tagIds.contains(it.tagId) }
             tagsToRemove.forEach { tag ->
@@ -220,7 +234,11 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     companion object {
 
-        internal fun shouldTimeEntryBeIncluded(task: TaskWithTimeEntries, startTime: LocalDateTime?, stopTime: LocalDateTime?): Boolean {
+        internal fun shouldTimeEntryBeIncluded(
+            task: TaskWithTimeEntries,
+            startTime: LocalDateTime?,
+            stopTime: LocalDateTime?
+        ): Boolean {
             return task.timeEntriesDay.any { timeEntryDay ->
                 shouldTimeEntryDayBeIncluded(timeEntryDay, startTime, stopTime)
             } ||

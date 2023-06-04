@@ -59,7 +59,7 @@ class TaskScreenModel(
     fun saveTask(taskName: String, tags: List<TaskMarkUiElement>, project: TaskMarkUiElement?) {
         viewModelScope.launch(Dispatchers.IO) {
             if (taskId == 0L) {
-                taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }).taskId
+                taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }, project?.toProject()).taskId
             } else {
                 taskRepository.saveTask(
                     taskId,
