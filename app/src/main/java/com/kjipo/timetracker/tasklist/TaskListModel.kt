@@ -38,7 +38,7 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
             // TODO Figure if there are problems with multiple threads updating the state using this
             while (isActive) {
                 delay(1000)
-                viewModelState.update { it.copy(refreshOngoingTasks(it.tasks)) }
+                viewModelState.update { it.copy(tasks = refreshOngoingTasks(it.tasks)) }
             }
         }
     }
