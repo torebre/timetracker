@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
-import java.time.Instant
 import java.time.Instant.now
 
 class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
@@ -77,10 +76,10 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     private fun refreshOngoingTasks(tasks: List<TaskUi>): List<TaskUi> {
         return tasks.map {
-            if (!it.isOngoing()) {
-                it
-            } else {
+            if (it.isOngoing()) {
                 it.copy(totalDuration = it.computeTotalDuration())
+            } else {
+                it
             }
         }.toList()
     }
@@ -140,13 +139,19 @@ data class TaskUi(
 
     fun getCurrentDuration(): Duration? {
         return getCurrentStart()?.let {
-            Duration.between(it.start, Instant.now())
+            Duration.between(it.start, now())
         }
     }
 
     fun computeTotalDuration(): Duration {
         return timeEntries.computeTotalDuration()
     }
+
+    fun computeDurationOfNotOpenEntries(): Duration {
+        return timeEntries.mapNotNull { it.getDuration() }.sumOf { it.toMillis() }
+            .let { Duration.ofMillis(it) }
+    }
+
 }
 
 fun List<TimeEntry>.computeTotalDuration(): Duration {

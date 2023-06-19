@@ -135,8 +135,7 @@ fun TaskList(taskListInputParameters: TaskListInputParameters) {
                 modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
-
-            ) {
+                ) {
                 TaskRow(
                     TaskRowInput(
                         task,
@@ -170,6 +169,7 @@ class TaskRowInput(
 
 @Composable
 fun TaskRow(taskRowInput: TaskRowInput) {
+
     Column(modifier = Modifier.padding(8.dp)) {
         Text(
             modifier = Modifier
@@ -187,8 +187,9 @@ fun TaskRow(taskRowInput: TaskRowInput) {
                 .height(80.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Column {
                 Text(
-                    text = formatDuration(taskRowInput.task.computeTotalDuration())
+                    text = formatDuration(taskRowInput.task.computeDurationOfNotOpenEntries())
                 )
 
                 Text(
@@ -196,6 +197,7 @@ fun TaskRow(taskRowInput: TaskRowInput) {
                         formatDuration(it)
                     } ?: ""
                 )
+            }
 
             // This is to push the buttons to the end of the row
             Spacer(Modifier.weight(1f))
@@ -221,10 +223,9 @@ fun TaskRow(taskRowInput: TaskRowInput) {
 
         Row {
             taskRowInput.task.tags.forEachIndexed { index, tagUi ->
-                val modifier = if(index == 0) {
+                val modifier = if (index == 0) {
                     Modifier.padding()
-                }
-                else {
+                } else {
                     Modifier.padding(start = 5.dp)
                 }
                 Tag(tagUi, modifier)
