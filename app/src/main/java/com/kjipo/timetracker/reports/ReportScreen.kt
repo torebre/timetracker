@@ -1,22 +1,23 @@
 package com.kjipo.timetracker.reports
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.ScrollableTabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import java.io.File
 import java.time.Duration
 import java.time.LocalDateTime
@@ -26,19 +27,27 @@ import java.time.LocalDateTime
 fun ReportScreen(reportsModel: ReportsModel) {
     val uiState = reportsModel.uiState.collectAsState()
 
-    ReportScreen(uiState.value) { selectedTimeRange ->
+    ReportScreen(uiState) { selectedTimeRange ->
         reportsModel.setSelectedTimeRange(selectedTimeRange)
     }
 }
 
 @Composable
+fun ReportScreen(uiState: State<ReportsUiState>, onTabSelected: (SelectedTimeRange) -> Unit) {
+    val uiStateValue = uiState.value
+    ReportScreen(uiState = uiStateValue, onTabSelected = onTabSelected)
+}
+
+@Composable
 fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit) {
-    val context = LocalContext.current
     // TODO Update selected tab when user clicks on it
     val selectedTab = remember { mutableStateOf(SelectedTimeRange.DAY) }
 
     Column {
-        ScrollableTabRow(selectedTabIndex = selectedTab.value.ordinal) {
+        ScrollableTabRow(
+            selectedTabIndex = selectedTab.value.ordinal,
+            modifier = Modifier.height(50.dp)
+            ) {
             SelectedTimeRange.values().forEachIndexed { index, timeRange ->
                 Tab(selected = index == selectedTab.value.ordinal,
                     onClick = {
@@ -49,35 +58,38 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
             }
         }
 
-        val state = rememberLazyListState()
-        Column {
-            LazyColumn(state = state) {
-                for (projectSummary in uiState.projectSummaries) {
-                    item {
-                        ProjectSummaryScreen(projectSummary)
-                    }
-                }
-            }
+//        Column {
+        ProjectSummaryList(uiState)
 
-            Column(modifier = Modifier.fillMaxWidth()) {
+        PieChartReport(uiState.pieChartData)
+
+//            Column(modifier = Modifier.fillMaxWidth()) {
 //        DateRangePicker(state = state, modifier = Modifier.weight(1f))
 
-                uiState.projectSummaries
+        // TODO Get file to export to
 
-                // TODO Get file to export to
-
-                // TODO Just here for testing
+        // TODO Just here for testing
 //    CalendarComponent(calendarUiState = CalendarUiState())
 
-                val fileToExportTo = File(context.cacheDir, "export_file_temp.zip")
-                Button(onClick = { exportData(fileToExportTo, context) }) {
-                    Text("Export")
-                }
-            }
+//            }
 
-        }
+//        }
 
     }
+}
+
+@Composable
+fun ProjectSummaryList(uiState: ReportsUiState) {
+    val state = rememberLazyListState()
+    LazyColumn(state = state) {
+        for (projectSummary in uiState.projectSummaries) {
+            item {
+                ProjectSummaryScreen(projectSummary)
+            }
+        }
+    }
+
+
 }
 
 @Composable
@@ -107,15 +119,31 @@ fun ReportScreenPreview() {
         )
     )
 
+
+    val pieChartDataWeek = PieChartData(
+        listOf(
+            PieChartEntry(1, 10, Color.Green),
+            PieChartEntry(2, 50, Color.Yellow),
+            PieChartEntry(2, 5, Color.hsl(200f, 1f, 0.5f)),
+            PieChartEntry(2, 5, Color.hsl(30f, 1f, 0.5f)),
+            PieChartEntry(2, 30, Color.hsl(150f, 1f, 0.5f)),
+        )
+    )
+
     val uiState = ReportsUiState(
         selectedTimeRange = SelectedTimeRange.DAY,
-        pieChartData = pieChartData,
+        pieChartData = pieChartDataWeek,
         projectSummaries = projectSummaries,
         customRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now())
     )
 
-    ReportScreen(uiState, {
+//    val mutableUiState = remember {
+//        mutableStateOf(uiState)
+//    }
+
+    ReportScreen(uiState) { selectedTimeRange ->
         // Do nothing
-    })
+
+    }
 
 }

@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.kjipo.timetracker.export.ExportScreen
 import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
 import com.kjipo.timetracker.taglistscreen.TagModel
@@ -35,7 +36,7 @@ fun TimeTrackerScaffold(
     appContainer: AppContainer
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS)
+    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS, Screens.EXPORT)
     val scope = rememberCoroutineScope()
     val selectedItem = remember { mutableStateOf(drawerItems[0]) }
 
@@ -77,7 +78,6 @@ fun TimeTrackerScaffold(
                             appContainer.appDatabase.clearAllTables()
                         }
                     })
-
             }
         })
     {
@@ -176,6 +176,10 @@ private fun MainContentScaffold(
                     navBackStackEntry.arguments?.getLong("projectId"),
                     appState
                 )
+            }
+
+            composable(Screens.EXPORT.name) {
+                ExportScreen()
             }
         }
     }

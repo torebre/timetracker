@@ -10,5 +10,6 @@ enum class Screens {
     TAGS,
     TAG,
     PROJECTS,
-    PROJECT
+    PROJECT,
+    EXPORT
 }
