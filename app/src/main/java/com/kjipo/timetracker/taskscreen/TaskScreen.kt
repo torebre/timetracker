@@ -2,16 +2,21 @@ package com.kjipo.timetracker.taskscreen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults.inputChipColors
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -143,7 +148,7 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 value = inputText.value,
                 onValueChange = { inputText.value = it },
                 modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.h4
+                textStyle = MaterialTheme.typography.headlineSmall
             )
         }
 
