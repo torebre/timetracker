@@ -3,7 +3,6 @@ package com.kjipo.timetracker.taskscreen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
@@ -59,7 +58,11 @@ class TaskScreenModel(
     fun saveTask(taskName: String, tags: List<TaskMarkUiElement>, project: TaskMarkUiElement?) {
         viewModelScope.launch(Dispatchers.IO) {
             if (taskId == 0L) {
-                taskId = taskRepository.createTask(taskName, tags.map { it.toTag() }, project?.toProject()).taskId
+                taskId = taskRepository.createTask(
+                    taskName,
+                    tags.map { it.toTag() },
+                    project?.toProject()
+                ).taskId
             } else {
                 taskRepository.saveTask(
                     taskId,
@@ -125,6 +128,29 @@ class TaskScreenModel(
     fun deleteTimeEntry(timeEntryId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             taskRepository.deleteTimeEntry(timeEntryId)
+            loadTask()
+        }
+    }
+
+    fun addTimeEntry(
+        start: Instant,
+        stop: Instant? = null
+    ) {
+        val taskIdToUse = taskId
+        viewModelScope.launch(Dispatchers.IO) {
+            val timeEntry = TimeEntry(0, taskIdToUse, start, stop)
+            taskRepository.addTimeEntry(timeEntry)
+            loadTask()
+        }
+    }
+
+    suspend fun getTimeEntry(timeEntryId: Long): TimeEntry? {
+        return taskRepository.getTimeEntry(timeEntryId)
+    }
+
+    fun updateTimeEntry(timeEntryId: Long, start: Instant, stop: Instant?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepository.updateTimeEntry(timeEntryId, start, stop)
             loadTask()
         }
     }

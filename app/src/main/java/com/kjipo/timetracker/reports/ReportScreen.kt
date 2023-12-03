@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Button
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,10 +14,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.io.File
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -40,7 +37,6 @@ fun ReportScreen(uiState: State<ReportsUiState>, onTabSelected: (SelectedTimeRan
 
 @Composable
 fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit) {
-    // TODO Update selected tab when user clicks on it
     val selectedTab = remember { mutableStateOf(SelectedTimeRange.DAY) }
 
     Column {
@@ -52,6 +48,7 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
                 Tab(selected = index == selectedTab.value.ordinal,
                     onClick = {
                         onTabSelected(timeRange)
+                        selectedTab.value = timeRange
                     }) {
                     Text(text = timeRange.name)
                 }

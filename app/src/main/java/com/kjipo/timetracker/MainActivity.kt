@@ -10,7 +10,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val appContainer = AppContainerImpl(applicationContext)
 
-
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }

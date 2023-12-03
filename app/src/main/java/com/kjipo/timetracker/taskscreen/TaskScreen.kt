@@ -24,9 +24,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.kjipo.timetracker.FloatingAddButton
+import com.kjipo.timetracker.Screens
+import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.timeFormatter
+import com.kjipo.timetracker.timeentryscreen.TimeEntryDialog
+import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -52,8 +60,18 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
             },
             {
                 // Do nothing
-            }, {
-                // Do nothing
+            },
+//            {
+//                // Do nothing
+//            },
+            { start, stop ->
+
+            },
+            { timeEntryId ->
+                null
+            },
+            { timeEntryId, start, stop ->
+
             })
     )
 
@@ -85,16 +103,40 @@ class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
 class TaskScreenInput(
     val taskScreenUiState: State<TaskScreenUiState>,
     val saveData: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
-    val navigateToTimeEditScreen: (Long) -> Unit,
-    val deleteTimeEntry: (Long) -> Unit
+//    val navigateToTimeEditScreen: (Long) -> Unit,
+    val deleteTimeEntry: (Long) -> Unit,
+    val addTimeEntry: (start: Instant, stop: Instant?) -> Unit,
+    val getTimeEntry: suspend (Long) -> TimeEntry?,
+    val updateTimeEntry: (value: Long, start: Instant, stop: Instant?) -> Unit
 )
+
+@Composable
+fun TaskScreen(
+    taskScreenModel: TaskScreenModel
+) {
+    TaskScreen(taskScreenModel,
+        { title, tags, project ->
+            taskScreenModel.saveTask(title, tags, project)
+        },
+//        { timeEntryId ->
+//            appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
+//        },
+        { timeEntryId ->
+            taskScreenModel.deleteTimeEntry(timeEntryId)
+        }, { start, stop ->
+            taskScreenModel.addTimeEntry(start, stop)
+        }
+    )
+
+}
 
 @Composable
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
     saveTask: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
-    navigateToTimeEditScreen: (Long) -> Unit,
-    deleteTimeEntry: (Long) -> Unit
+//    navigateToTimeEditScreen: (Long) -> Unit,
+    deleteTimeEntry: (Long) -> Unit,
+    addTimeEntry: (start: Instant, stop: Instant?) -> Unit,
 ) {
     val uiState = taskScreenModel.uiState.collectAsState()
 
@@ -102,8 +144,15 @@ fun TaskScreen(
         TaskScreenInput(
             uiState,
             saveTask,
-            navigateToTimeEditScreen,
-            deleteTimeEntry
+//            navigateToTimeEditScreen,
+            deleteTimeEntry,
+            addTimeEntry,
+            { timeEntryId ->
+                taskScreenModel.getTimeEntry(timeEntryId)
+            },
+            { timeEntryId, start, stop ->
+                taskScreenModel.updateTimeEntry(timeEntryId, start, stop)
+            }
         )
     )
 }
@@ -141,6 +190,18 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
     val selectedProject = remember {
         mutableStateOf(taskUiState.project)
     }
+
+    val showDialog = remember { mutableStateOf(false) }
+
+    val timeEntryEditUiState = remember {
+        mutableStateOf(TimeEntryEditUiState(waiting = false))
+    }
+
+    val editTimeEntry = remember {
+        mutableLongStateOf(0)
+    }
+
+    val coroutineScope = rememberCoroutineScope()
 
     Column {
         Row {
@@ -219,7 +280,24 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 item {
                     TimeEntryRow(
                         timeEntry,
-                        taskScreenInput.navigateToTimeEditScreen,
+//                        taskScreenInput.navigateToTimeEditScreen,
+                        {
+                            timeEntryEditUiState.value =
+                                timeEntryEditUiState.value.copy(waiting = true)
+                           editTimeEntry.longValue = timeEntry.id
+
+                            coroutineScope.launch(Dispatchers.IO) {
+                                Timber.d("Opening edit dialog for time entry with ID ${timeEntry.id}")
+                                taskScreenInput.getTimeEntry(timeEntry.id)?.let {
+                                    timeEntryEditUiState.value =
+                                        timeEntryEditUiState.value.copy(
+                                            waiting = false,
+                                            timeEntry = it
+                                        )
+                                }
+                                showDialog.value = true
+                            }
+                        },
                         taskScreenInput.deleteTimeEntry
                     )
                 }
@@ -248,9 +326,30 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 Text("Save")
             }
         }
-
     }
 
+
+    if (showDialog.value) {
+        TimeEntryDialog(
+            timeEntryEditUiState,
+            setShowDialog = { show ->
+                showDialog.value = show
+            }, addTimeEntry = { start, stop ->
+                if(editTimeEntry.longValue != 0L) {
+                    taskScreenInput.updateTimeEntry(editTimeEntry.value, start, stop)
+                }
+                else {
+                    taskScreenInput.addTimeEntry(start, stop)
+                }
+            })
+    }
+
+    FloatingAddButton(contentDescription = "Add time entry") {
+        timeEntryEditUiState.value =
+            timeEntryEditUiState.value.copy(waiting = false, timeEntry = null)
+        editTimeEntry.longValue = 0
+        showDialog.value = true
+    }
 
 }
 

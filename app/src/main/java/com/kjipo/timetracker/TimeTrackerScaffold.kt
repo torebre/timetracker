@@ -270,16 +270,7 @@ private fun GoToTaskScreen(
                 appContainer.taskRepository
             )
         )
-
-        TaskScreen(taskScreenModel, { title, tags, project ->
-            taskScreenModel.saveTask(title, tags, project)
-        },
-            { timeEntryId ->
-                appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
-            },
-            { timeEntryId ->
-                taskScreenModel.deleteTimeEntry(timeEntryId)
-            })
+        TaskScreen(taskScreenModel)
     }
 
 }
@@ -294,18 +285,24 @@ private fun GoToTimeEntryScreen(
 
     navBackStackEntry.arguments?.getLong("timeEntryId")?.let { timeEntryId ->
         val uiState by produceState(initialValue = TimeEntryEditUiState(waiting = true)) {
-
             coroutineScope.launch(Dispatchers.IO) {
                 val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
                 value = TimeEntryEditUiState(timeEntry = timeEntry)
             }
         }
 
-        TimeEntryScreen(uiState, { timeEntry ->
+        TimeEntryScreen(uiState, { timeEntryId, start, stop ->
             coroutineScope.launch(Dispatchers.IO) {
-                appContainer.taskRepository.updateTimeEntry(timeEntry)
-                coroutineScope.launch(Dispatchers.Main) {
-                    appState.navigateToScreen("${Screens.TASK.name}/${timeEntry.taskId}")
+                // On this time entry screen the timeEntry should not be null since an existing entry is being edited
+                timeEntryId?.let {
+                    appContainer.taskRepository.updateTimeEntry(timeEntryId, start, stop)
+                        .let { updatedTimeEntry ->
+                            if (updatedTimeEntry != null) {
+                                coroutineScope.launch(Dispatchers.Main) {
+                                    appState.navigateToScreen("${Screens.TASK.name}/${updatedTimeEntry.taskId}")
+                                }
+                            }
+                        }
                 }
             }
         },

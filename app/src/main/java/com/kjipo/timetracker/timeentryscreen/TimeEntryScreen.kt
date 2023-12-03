@@ -31,34 +31,37 @@ import java.time.ZoneOffset
 @Composable
 fun TimeEntryScreen(
     uiState: TimeEntryEditUiState,
-    updateEntry: (TimeEntry) -> Unit,
+    updateEntry: (timeEntryId: Long?, start: Instant, stop: Instant?) -> Unit,
     cancel: () -> Unit
 ) {
-    val screenShowing = remember {
-        mutableStateOf(TimeEntryShowing.OVERVIEW)
-    }
-
     when {
         uiState.waiting -> {
             Text("Waiting")
-
         }
+
         uiState.timeEntry != null -> {
             TimeEntryInternal(
                 TimeEntryInternalParameters(
-                    uiState.timeEntry,
-                    screenShowing,
+                    uiState.timeEntry.timeEntryId,
+                    uiState.timeEntry.start,
+                    uiState.timeEntry.stop,
                     updateEntry,
                     cancel
                 )
             )
         }
-        else -> {
-            // TODO
 
-
+        uiState.timeEntry == null -> {
+            TimeEntryInternal(
+                TimeEntryInternalParameters(
+                    null,
+                    Instant.now().minusSeconds(300),
+                    Instant.now(),
+                    updateEntry,
+                    cancel
+                )
+            )
         }
-
     }
 
 }
@@ -76,12 +79,10 @@ private class TimeEntryInternalParameterProvider :
     PreviewParameterProvider<TimeEntryInternalParameters> {
 
     override val values = sequenceOf(TimeEntryInternalParameters(
-        TimeEntry(
-            1, 1,
-            LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC),
-            LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC)
-        ),
-        mutableStateOf(TimeEntryShowing.OVERVIEW), {
+        1L,
+        LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC),
+        LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC),
+        { timeEntryId, start, stop ->
             // Do nothing
         },
         {
@@ -91,50 +92,60 @@ private class TimeEntryInternalParameterProvider :
 }
 
 
-private class TimeEntryInternalParameters(
-    val timeEntry: TimeEntry,
-    val screenShowing: MutableState<TimeEntryShowing>,
-    val updateEntry: (TimeEntry) -> Unit,
+class TimeEntryInternalParameters(
+    val timeEntryId: Long?,
+    val start: Instant,
+    val stop: Instant?,
+    val updateEntry: (timeEntryId: Long?, start: Instant, stop: Instant?) -> Unit,
     val cancel: () -> Unit
 )
 
 @Preview(showBackground = true)
 @Composable
-private fun TimeEntryInternal(
+fun TimeEntryInternal(
     @PreviewParameter(TimeEntryInternalParameterProvider::class) timeEntryInternalParameters: TimeEntryInternalParameters
 ) {
-    val startTimeState = remember {
-        mutableStateOf(timeEntryInternalParameters.timeEntry.start)
-    }
-    val stopTimeState = remember {
-        mutableStateOf(timeEntryInternalParameters.timeEntry.stop ?: Instant.now())
+    val screenShowing = remember {
+        mutableStateOf(TimeEntryShowing.OVERVIEW)
     }
 
-    Column {
-        when (timeEntryInternalParameters.screenShowing.value) {
+    val startTimeState = remember {
+        mutableStateOf(timeEntryInternalParameters.start)
+    }
+
+    // TODO Does this work? Setting stop time to now if no stop is set for time
+    val stopTimeState = remember {
+        mutableStateOf(timeEntryInternalParameters.stop ?: Instant.now())
+    }
+
+    Column(modifier = Modifier.padding(10.dp)) {
+        when (screenShowing.value) {
             TimeEntryShowing.OVERVIEW -> {
                 ShowOverview(
-                    timeEntryInternalParameters.timeEntry,
-                    timeEntryInternalParameters.screenShowing,
+                    screenShowing,
                     startTimeState,
                     stopTimeState
                 )
             }
+
             TimeEntryShowing.TIME_PICKER_START -> {
-                EditTime(startTimeState, timeEntryInternalParameters.screenShowing)
+                EditTime(startTimeState, screenShowing)
             }
+
             TimeEntryShowing.DATE_PICKER_START -> {
-                EditDate(startTimeState, timeEntryInternalParameters.screenShowing)
+                EditDate(startTimeState, screenShowing)
             }
+
             TimeEntryShowing.TIME_PICKER_STOP -> {
-                EditTime(stopTimeState, timeEntryInternalParameters.screenShowing)
+                EditTime(stopTimeState, screenShowing)
             }
+
             TimeEntryShowing.DATE_PICKER_STOP -> {
-                EditDate(stopTimeState, timeEntryInternalParameters.screenShowing)
+                EditDate(stopTimeState, screenShowing)
             }
         }
 
-        if (timeEntryInternalParameters.screenShowing.value == TimeEntryShowing.OVERVIEW) {
+        if (screenShowing.value == TimeEntryShowing.OVERVIEW) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -142,14 +153,13 @@ private fun TimeEntryInternal(
                 Button(
                     onClick = {
                         timeEntryInternalParameters.updateEntry(
-                            timeEntryInternalParameters.timeEntry.copy(
-                                start = startTimeState.value,
-                                stop = stopTimeState.value
-                            )
+                            timeEntryInternalParameters.timeEntryId,
+                            startTimeState.value,
+                            stopTimeState.value
                         )
                     },
-                    enabled = startTimeState.value != timeEntryInternalParameters.timeEntry.start
-                            || stopTimeState.value != timeEntryInternalParameters.timeEntry.stop,
+                    enabled = startTimeState.value != timeEntryInternalParameters.start
+                            || stopTimeState.value != timeEntryInternalParameters.stop
                 ) {
                     Text("Save")
                 }
@@ -171,10 +181,9 @@ private fun TimeEntryInternal(
 
 @Composable
 private fun ShowOverview(
-    timeEntry: TimeEntry,
     screenShowing: MutableState<TimeEntryShowing>,
     startTimeState: MutableState<Instant>,
-    stopTimeState: MutableState<Instant>
+    stopTimeState: MutableState<Instant?>
 ) {
     Text(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
@@ -192,43 +201,42 @@ private fun ShowOverview(
 
         Spacer(modifier = Modifier.weight(0.5f))
 
-        if (timeEntry.stop != null) {
-            Text(
-                modifier = Modifier.clickable {
-                    screenShowing.value = TimeEntryShowing.TIME_PICKER_START
-                },
-                style = MaterialTheme.typography.labelMedium,
-                text = timeFormatter.format(startTimeState.value.atZone(ZoneId.systemDefault()))
-            )
-        }
+        Text(
+            modifier = Modifier.clickable {
+                screenShowing.value = TimeEntryShowing.TIME_PICKER_START
+            },
+            style = MaterialTheme.typography.labelMedium,
+            text = timeFormatter.format(startTimeState.value.atZone(ZoneId.systemDefault()))
+        )
     }
 
-    if (timeEntry.stop != null) {
+    Text(
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
+        style = MaterialTheme.typography.headlineSmall,
+        text = "Stop"
+    )
+
+    Row {
         Text(
-            modifier = Modifier.background(MaterialTheme.colorScheme.background),
-            style = MaterialTheme.typography.headlineSmall,
-            text = "Stop"
+            modifier = Modifier.clickable {
+                screenShowing.value = TimeEntryShowing.DATE_PICKER_STOP
+            },
+            style = MaterialTheme.typography.labelMedium,
+            text = stopTimeState.value?.let { dateFormatter.format(it.atZone(ZoneId.systemDefault())) }
+                ?: ""
         )
 
-        Row {
-            Text(
-                modifier = Modifier.clickable {
-                    screenShowing.value = TimeEntryShowing.DATE_PICKER_STOP
-                },
-                style = MaterialTheme.typography.labelMedium,
-                text = dateFormatter.format(stopTimeState.value.atZone(ZoneId.systemDefault()))
-            )
+        Spacer(modifier = Modifier.weight(0.5f))
 
-            Spacer(modifier = Modifier.weight(0.5f))
-
-            Text(
-                modifier = Modifier.clickable {
-                    screenShowing.value = TimeEntryShowing.TIME_PICKER_STOP
-                },
-                style = MaterialTheme.typography.labelMedium,
-                text = timeFormatter.format(stopTimeState.value.atZone(ZoneId.systemDefault()))
-            )
-        }
+        Text(
+            modifier = Modifier.clickable {
+                screenShowing.value = TimeEntryShowing.TIME_PICKER_STOP
+            },
+            style = MaterialTheme.typography.labelMedium,
+            text = stopTimeState.value?.let {
+                timeFormatter.format(it.atZone(ZoneId.systemDefault()))
+            } ?: ""
+        )
     }
 }
 

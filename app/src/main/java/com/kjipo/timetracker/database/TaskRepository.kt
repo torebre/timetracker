@@ -1,13 +1,10 @@
 package com.kjipo.timetracker.database
 
 import androidx.room.Transaction
-import timber.log.Timber
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.TimeZone
 
 
 interface TaskRepository {
@@ -69,6 +66,7 @@ interface TaskRepository {
     suspend fun addProject(taskId: Long, projectId: Long)
 
     suspend fun removeProject(taskId: Long, projectId: Long)
+    suspend fun updateTimeEntry(timeEntry: Long, start: Instant, stop: Instant?): TimeEntry?
 
 }
 
@@ -138,6 +136,19 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun updateTimeEntry(timeEntry: TimeEntry) {
         appDatabase.timeEntryDao().updateTimeEntry(timeEntry)
+    }
+
+    override suspend fun updateTimeEntry(
+        timeEntryId: Long,
+        start: Instant,
+        stop: Instant?
+    ): TimeEntry? {
+        return appDatabase.timeEntryDao().getTimeEntry(timeEntryId)?.let { timeEntry ->
+            timeEntry.start = start
+            timeEntry.stop = stop
+            appDatabase.timeEntryDao().updateTimeEntry(timeEntry)
+            timeEntry
+        }
     }
 
     @Transaction
