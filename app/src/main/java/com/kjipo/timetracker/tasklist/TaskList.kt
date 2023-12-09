@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
@@ -41,18 +41,6 @@ class TaskListInputParameters(
     val toggleStartStop: (Long) -> Unit
 )
 
-//class TaskListParameterInputProvider : PreviewParameterProvider<TaskListInputParameters> {
-//    override val values = sequenceOf(
-//        TaskListInputParameters(TaskListUiState(getPreviewTasks()), {
-//            // Do nothing
-//        },
-//            {
-//                // Do nothing
-//            })
-//    )
-//
-//}
-
 
 private fun getPreviewTasks(): List<TaskUi> {
     val random = Random(1)
@@ -63,7 +51,7 @@ private fun getPreviewTasks(): List<TaskUi> {
 
         TaskUi(
             id,
-            "Task $id",
+            "Task $id aaaaaaa bbbbbbbb ccccccccccc",
             timeEntries,
             Duration.ofSeconds(
                 timeEntries.map { it.getDuration() }.filterNotNull().sumOf { it.seconds }),
@@ -135,7 +123,7 @@ fun TaskList(taskListInputParameters: TaskListInputParameters) {
                 modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
-                ) {
+            ) {
                 TaskRow(
                     TaskRowInput(
                         task,
@@ -155,17 +143,6 @@ class TaskRowInput(
     val toggleStartStop: (Long) -> Unit
 )
 
-//class TaskRowParameterProvider : PreviewParameterProvider<TaskRowInput> {
-//
-//    override val values = sequenceOf(
-//        TaskRowInput(getPreviewTasks().first(), {
-//            // Do nothing
-//        }, {
-//            // Do nothing
-//        })
-//    )
-//
-//}
 
 @Composable
 fun TaskRow(taskRowInput: TaskRowInput) {
@@ -176,27 +153,32 @@ fun TaskRow(taskRowInput: TaskRowInput) {
                 .clickable {
                     taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
                 }
-                .width(120.dp),
+                .fillMaxWidth(),
             style = MaterialTheme.typography.headlineSmall,
             text = taskRowInput.task.title
         )
 
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(),
         ) {
             Column {
-                Text(
-                    text = formatDuration(taskRowInput.task.computeDurationOfNotOpenEntries())
-                )
+                Row {
+                    Text(modifier = Modifier.defaultMinSize(70.dp), text = "Current:")
+                    Text(
+                        text =
+                        taskRowInput.task.getCurrentDuration()?.let {
+                            formatDuration(it)
+                        } ?: ""
+                    )
+                }
 
-                Text(
-                    text = taskRowInput.task.getCurrentDuration()?.let {
-                        formatDuration(it)
-                    } ?: ""
-                )
+                Row {
+                    Text(modifier = Modifier.defaultMinSize(70.dp), text = "Total:")
+                    Text(
+                        text = formatDuration(taskRowInput.task.computeDurationOfNotOpenEntries())
+                    )
+                }
             }
 
             // This is to push the buttons to the end of the row
