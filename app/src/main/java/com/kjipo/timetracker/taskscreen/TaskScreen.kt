@@ -25,7 +25,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.FloatingAddButton
-import com.kjipo.timetracker.Screens
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
@@ -280,7 +279,6 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 item {
                     TimeEntryRow(
                         timeEntry,
-//                        taskScreenInput.navigateToTimeEditScreen,
                         {
                             timeEntryEditUiState.value =
                                 timeEntryEditUiState.value.copy(waiting = true)
@@ -326,6 +324,13 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 Text("Save")
             }
         }
+
+//        FloatingAddButton(modifiercontentDescription = "Add time entry") {
+//            timeEntryEditUiState.value =
+//                timeEntryEditUiState.value.copy(waiting = false, timeEntry = null)
+//            editTimeEntry.longValue = 0
+//            showDialog.value = true
+//        }
     }
 
 
@@ -344,12 +349,6 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             })
     }
 
-    FloatingAddButton(contentDescription = "Add time entry") {
-        timeEntryEditUiState.value =
-            timeEntryEditUiState.value.copy(waiting = false, timeEntry = null)
-        editTimeEntry.longValue = 0
-        showDialog.value = true
-    }
 
 }
 

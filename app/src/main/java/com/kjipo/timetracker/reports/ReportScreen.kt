@@ -1,9 +1,14 @@
 package com.kjipo.timetracker.reports
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -16,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kjipo.timetracker.formatDuration
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -85,15 +91,19 @@ fun ProjectSummaryList(uiState: ReportsUiState) {
             }
         }
     }
-
-
 }
 
 @Composable
 fun ProjectSummaryScreen(projectSummary: ProjectSummary) {
-    Text(projectSummary.title)
-    Text("${projectSummary.duration}")
-    Text("${projectSummary.percentage}")
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(style = MaterialTheme.typography.headlineSmall,
+            text = projectSummary.title)
+
+        Spacer(modifier = Modifier.weight(0.1f))
+
+        Text(formatDuration(projectSummary.duration))
+        Text(modifier = Modifier.padding(start = 5.dp), text = "(${projectSummary.percentage} %)")
+    }
 }
 
 
@@ -112,6 +122,19 @@ fun ReportScreenPreview() {
             1L,
             "Test project",
             Duration.ofMinutes(100),
+            10.0
+        ),
+        ProjectSummary(
+            2L,
+            "Test project2",
+            Duration.ofMinutes(200),
+            10.0
+        ),
+
+        ProjectSummary(
+            2L,
+            "Test project3",
+            Duration.ofMinutes(300),
             10.0
         )
     )

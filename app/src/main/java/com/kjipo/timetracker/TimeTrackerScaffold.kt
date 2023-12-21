@@ -106,7 +106,11 @@ private fun MainContentScaffold(
                 },
                 {
                     appState.navigateToScreen("${Screens.PROJECT.name}/0")
+                },
+                {
+                    appState.navigateToScreen("${Screens.TASK.name}/0/0")
                 }
+
             )
         }
     ) { paddingValues ->
@@ -131,6 +135,15 @@ private fun MainContentScaffold(
                 })
             ) { navBackStackEntry ->
                 GoToTaskScreen(navBackStackEntry, appContainer, appState)
+            }
+
+            composable(
+                "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
+                arguments = listOf(navArgument("timeEntryId") {
+                    type = NavType.LongType
+                })
+            ) { navBackStackEntry ->
+                GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
             }
 
             composable(
@@ -324,13 +337,13 @@ fun TimeTrackerBottomBar(
     navigateToRoute: (String) -> Unit,
 ) {
     Row {
-        Button(onClick = {
+        Button(modifier = Modifier.padding(start = 5.dp), onClick = {
             navigateToRoute(Screens.TASKS.name)
         }) {
             Text("Tasks")
         }
 
-        Button(onClick = {
+        Button(modifier = Modifier.padding(start = 5.dp), onClick = {
             navigateToRoute(Screens.REPORTS.name)
         }) {
             Text("Reports")
@@ -356,7 +369,8 @@ fun AddTaskButton(
     taskScreenShowing: MutableState<Screens?>,
     addTask: () -> Unit,
     addTag: () -> Unit,
-    addProject: () -> Unit
+    addProject: () -> Unit,
+    addTimeEntry: () -> Unit
 ) {
     when (taskScreenShowing.value) {
         Screens.TASKS -> {
@@ -369,6 +383,10 @@ fun AddTaskButton(
 
         Screens.PROJECTS -> {
             FloatingAddButton(contentDescription = "Add project", onClickHandler = addProject)
+        }
+
+        Screens.TASK -> {
+            FloatingAddButton(contentDescription = "Add time entry", onClickHandler = addTimeEntry)
         }
 
         else -> {

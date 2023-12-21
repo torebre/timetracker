@@ -145,3 +145,13 @@ fun addTimeEntry(timeEntry: TimeEntry, appDatabase: AppDatabase) {
 fun addTimeEntryDay(timeEntryDay: TimeEntryDay, appDatabase: AppDatabase) {
     timeEntryDay.id = appDatabase.timeEntryDao().insertTimeEntryDay(timeEntryDay)
 }
+
+fun formatDuration(duration: Duration): String {
+    with(duration) {
+        return "${toTwoDigits(toHoursPartHelper())}:${toTwoDigits(toMinutesPartHelper())}:${
+            toTwoDigits(
+                toSecondsPartHelper()
+            )
+        }"
+    }
+}

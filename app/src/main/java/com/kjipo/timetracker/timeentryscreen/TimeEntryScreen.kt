@@ -31,7 +31,7 @@ import java.time.ZoneOffset
 @Composable
 fun TimeEntryScreen(
     uiState: TimeEntryEditUiState,
-    updateEntry: (timeEntryId: Long?, start: Instant, stop: Instant?) -> Unit,
+    updateOrCreateEntry: (timeEntryId: Long?, start: Instant, stop: Instant?) -> Unit,
     cancel: () -> Unit
 ) {
     when {
@@ -45,7 +45,7 @@ fun TimeEntryScreen(
                     uiState.timeEntry.timeEntryId,
                     uiState.timeEntry.start,
                     uiState.timeEntry.stop,
-                    updateEntry,
+                    updateOrCreateEntry,
                     cancel
                 )
             )
@@ -57,7 +57,7 @@ fun TimeEntryScreen(
                     null,
                     Instant.now().minusSeconds(300),
                     Instant.now(),
-                    updateEntry,
+                    updateOrCreateEntry,
                     cancel
                 )
             )

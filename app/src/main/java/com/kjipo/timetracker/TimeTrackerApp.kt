@@ -81,9 +81,9 @@ class TimeTrackerAppState(
     }
 
     private fun shouldStateBeSaved(route: String): Boolean {
-        return !route.startsWith(Screens.TASK.name)
-                && !route.startsWith(Screens.TAG.name)
+        return !route.startsWith(Screens.TAG.name)
                 && !route.startsWith(Screens.TASKS.name)
+//        |!route.startsWith(Screens.TASK.name)
     }
 
 }
