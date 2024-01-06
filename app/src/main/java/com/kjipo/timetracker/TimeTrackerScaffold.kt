@@ -26,6 +26,8 @@ import com.kjipo.timetracker.taskscreen.TaskScreen
 import com.kjipo.timetracker.taskscreen.TaskScreenModel
 import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
+import com.kjipo.timetracker.weekview.WeekViewModel
+import com.kjipo.timetracker.weekview.WeekViewScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -126,6 +128,11 @@ private fun MainContentScaffold(
             composable(Screens.REPORTS.name) {
                 val reportsModel = ReportsModel(appContainer.taskRepository)
                 ReportScreen(reportsModel)
+            }
+
+            composable(Screens.WEEKVIEW.name) {
+                val weekViewModel = WeekViewModel(appContainer.taskRepository)
+                WeekViewScreen(weekViewModel)
             }
 
             composable(
@@ -349,17 +356,12 @@ fun TimeTrackerBottomBar(
             Text("Reports")
         }
 
-//        Button(onClick = {
-//            navigateToRoute(Screens.TAGS.name)
-//        }) {
-//            Text("Tags")
-//        }
-//
-//        Button(onClick = {
-//            navigateToRoute(Screens.PROJECTS.name)
-//        }) {
-//            Text("Projects")
-//        }
+        Button(modifier = Modifier.padding(start = 5.dp), onClick = {
+            navigateToRoute(Screens.WEEKVIEW.name)
+        }) {
+            Text("Week")
+        }
+
     }
 
 }

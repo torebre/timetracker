@@ -11,5 +11,6 @@ enum class Screens {
     TAG,
     PROJECTS,
     PROJECT,
-    EXPORT
+    EXPORT,
+    WEEKVIEW
 }

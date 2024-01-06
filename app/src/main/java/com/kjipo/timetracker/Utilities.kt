@@ -46,6 +46,8 @@ fun addTestData(appDatabase: AppDatabase) {
         Project(0, "Project 1", Color.valueOf(Color.GREEN)).also { addProject(it, appDatabase) }
     val project2 =
         Project(0, "Project 2", Color.valueOf(Color.YELLOW)).also { addProject(it, appDatabase) }
+    val project3 =
+        Project(0, "Project 3", Color.valueOf(Color.RED)).also { addProject(it, appDatabase) }
 
     val tag =
         Tag(0, "Tag 1", Color.valueOf(Color.RED)).also { addTag(it, appDatabase) }
@@ -92,6 +94,22 @@ fun addTestData(appDatabase: AppDatabase) {
         addTimeEntry(it, appDatabase)
     }
 
+    val startTimeEntry5 = LocalDate.now().minusDays(2).atTime(14, 0).toInstant(ZoneOffset.UTC)
+    val timeEntry5 = TimeEntry(
+        0, task2.taskId, startTimeEntry5,
+        startTimeEntry5.plusSeconds(3600)
+    ).also {
+        addTimeEntry(it, appDatabase)
+    }
+
+    val startTimeEntry6 = LocalDate.now().minusDays(4).atTime(15, 0).toInstant(ZoneOffset.UTC)
+    val timeEntry6 = TimeEntry(
+        0, task3.taskId, startTimeEntry6,
+        startTimeEntry6.plusSeconds(7200)
+    ).also {
+        addTimeEntry(it, appDatabase)
+    }
+
     val timeEntryDay =
         TimeEntryDay(0, task.taskId, LocalDate.of(2023, 2, 5), Duration.ofMinutes(10)).also {
             addTimeEntryDay(it, appDatabase)
@@ -104,6 +122,12 @@ fun addTestData(appDatabase: AppDatabase) {
 
     val timeEntryDay3 =
         TimeEntryDay(0, task.taskId, LocalDate.now(), Duration.ofHours(2)).also {
+            addTimeEntryDay(it, appDatabase)
+        }
+
+    val startTimeEntryDay4 = LocalDate.now().minusDays(1)
+    val timeEntryDay4 =
+        TimeEntryDay(0, task2.taskId, startTimeEntryDay4, Duration.ofHours(2)).also {
             addTimeEntryDay(it, appDatabase)
         }
 
