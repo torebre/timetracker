@@ -110,6 +110,15 @@ fun addTestData(appDatabase: AppDatabase) {
         addTimeEntry(it, appDatabase)
     }
 
+    // The same date as the one above, but with a different task
+    val startTimeEntry7= LocalDate.now().minusDays(4).atTime(15, 0).toInstant(ZoneOffset.UTC)
+    val timeEntry7= TimeEntry(
+        0, task2.taskId, startTimeEntry7,
+        startTimeEntry7.plusSeconds(7200)
+    ).also {
+        addTimeEntry(it, appDatabase)
+    }
+
     val timeEntryDay =
         TimeEntryDay(0, task.taskId, LocalDate.of(2023, 2, 5), Duration.ofMinutes(10)).also {
             addTimeEntryDay(it, appDatabase)

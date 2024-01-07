@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
+import java.time.ZoneId
 
 
 class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
@@ -32,42 +33,81 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
-
-
     private suspend fun generateTaskList(): List<DaySummary> {
         return generateDaysFromStartOfWeekUntilToday()
-            .map {
-                DaySummary(
-                    it,
-                    generateDaySummary(
-                        taskRepository.getTasksWithTimeEntries(
-                            it.atStartOfDay(),
-                            it.atTime(23, 59, 59)
-                        )
+            .map { localDate ->
+                val daySummary = generateDaySummary(
+                    localDate,
+                    // The method getTaskWithTimeEntries does not filter out time entries for the
+                    // task that are outside the interval, it returns the task with all time
+                    // entries. The tasks returned will have one or more time entries within
+                    // the interval given as input
+                    taskRepository.getTasksWithTimeEntries(
+                        localDate.atStartOfDay(),
+                        localDate.atTime(23, 59, 59)
                     )
                 )
+
+                val timeLogged = if (daySummary.isEmpty()) {
+                    Duration.ZERO
+                } else {
+                    daySummary.map { it.duration }.reduce { duration1, duration2 ->
+                        duration1.plus(duration2)
+                    }
+                }
+
+                DaySummary(
+                    localDate,
+                    timeLogged,
+                    daySummary
+                )
             }
-
-
     }
 
-    private fun generateDaySummary(tasksForDay: List<TaskWithTimeEntries>): List<DayTaskSummary> {
+    private fun generateDaySummary(
+        localDate: LocalDate,
+        tasksForDay: List<TaskWithTimeEntries>
+    ): List<DayTaskSummary> {
         return tasksForDay.groupBy { it.task }
             .map { entry ->
                 val totalDuration = entry.value.map { tasksWithTimeEntries ->
-                    val durationTimeEntries = tasksWithTimeEntries.timeEntries.map { timeEntry ->
-                        timeEntry.getDurationMissingStopSetToNow()
-                    }.reduce { duration1, duration2 ->
-                        duration1.plus(duration2)
+                    val durationTimeEntries = if (tasksWithTimeEntries.timeEntries.isEmpty()) {
+                        Duration.ZERO
+                    } else {
+                        tasksWithTimeEntries.getTimeEntriesCompletelyWithinInterval(localDate.atStartOfDay()
+                            .let {
+                                it.toInstant(ZoneId.systemDefault().rules.getOffset(it))
+                            },
+                            localDate.atTime(23, 59, 59).let {
+                                it.toInstant(ZoneId.systemDefault().rules.getOffset(it))
+                            }).let { timeEntriesToInclude ->
+                            if (timeEntriesToInclude.isEmpty()) {
+                                Duration.ZERO
+                            } else {
+                                timeEntriesToInclude.map { timeEntry ->
+                                    timeEntry.getDurationMissingStopSetToNow()
+                                }.reduce { duration1, duration2 ->
+                                    duration1.plus(duration2)
+                                }
+                            }
+                        }
                     }
 
                     // These are entries with no specific start or stop time.
                     // They consist of a day and a duration
-                    val durationDayEntries = tasksWithTimeEntries.timeEntriesDay.map {
-                        it.duration
-                    }.reduce { duration1, duration2 ->
-                        duration1.plus(duration2)
-                    }
+                    val durationDayEntries =
+                        tasksWithTimeEntries.getTimeDayEntriesForDate(localDate)
+                            .let { timeEntriesToInclude ->
+                                if (timeEntriesToInclude.isEmpty()) {
+                                    Duration.ZERO
+                                } else {
+                                    timeEntriesToInclude.map {
+                                        it.duration
+                                    }.reduce { duration1, duration2 ->
+                                        duration1.plus(duration2)
+                                    }
+                                }
+                            }
 
                     durationTimeEntries.plus(durationDayEntries)
                 }.reduce { duration1, duration2 ->
@@ -77,7 +117,6 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
             }
     }
 
-
     companion object {
 
         internal fun generateDaysFromStartOfWeekUntilToday(day: LocalDate = LocalDate.now()): List<LocalDate> {
@@ -85,15 +124,17 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
                 day.minusDays(it.toLong())
             }.reversed()
         }
-
     }
-
 
 }
 
 
 data class DayTaskSummary(val title: String, val duration: Duration)
 
-data class DaySummary(val date: LocalDate, val tasks: List<DayTaskSummary>)
+data class DaySummary(
+    val date: LocalDate,
+    val timeLogged: Duration,
+    val tasks: List<DayTaskSummary>
+)
 
 data class WeekViewState(val daySummaries: List<DaySummary>)

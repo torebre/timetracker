@@ -6,6 +6,7 @@ import androidx.room.ForeignKey.Companion.SET_NULL
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity(
     foreignKeys = [ForeignKey(
@@ -126,8 +127,23 @@ data class TaskWithTimeEntries(
         entityColumn = "projectId"
     )
     val project: Project?
+) {
 
-)
+    fun getTimeEntriesCompletelyWithinInterval(
+        startTime: Instant,
+        endTime: Instant
+    ): List<TimeEntry> {
+        return timeEntries.filter {
+            it.start.isAfter(startTime) && it.stop?.isBefore(endTime) ?: true
+        }
+    }
+
+    fun getTimeDayEntriesForDate(localDate: LocalDate): List<TimeEntryDay> {
+        return timeEntriesDay.filter { it.date == localDate }
+    }
+
+
+}
 
 data class TagWithTaskEntries(
     @Embedded val tag: Tag,
