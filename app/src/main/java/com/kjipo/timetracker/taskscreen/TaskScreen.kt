@@ -1,7 +1,7 @@
 package com.kjipo.timetracker.taskscreen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -38,6 +38,10 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.modifier.modifierLocalConsumer
 
 
 class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
@@ -274,33 +278,37 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             )
         }
 
-        for (timeEntry in taskUiState.timeEntries) {
-            LazyRow {
-                item {
-                    TimeEntryRow(
-                        timeEntry,
-                        {
-                            timeEntryEditUiState.value =
-                                timeEntryEditUiState.value.copy(waiting = true)
-                           editTimeEntry.longValue = timeEntry.id
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            items(items = taskUiState.timeEntries,
+                key = { timeEntry ->
+                    timeEntry.id
+                }) { timeEntry ->
+                TimeEntryRow(
+                    timeEntry,
+                    {
+                        timeEntryEditUiState.value =
+                            timeEntryEditUiState.value.copy(waiting = true)
+                        editTimeEntry.longValue = timeEntry.id
 
-                            coroutineScope.launch(Dispatchers.IO) {
-                                Timber.d("Opening edit dialog for time entry with ID ${timeEntry.id}")
-                                taskScreenInput.getTimeEntry(timeEntry.id)?.let {
-                                    timeEntryEditUiState.value =
-                                        timeEntryEditUiState.value.copy(
-                                            waiting = false,
-                                            timeEntry = it
-                                        )
-                                }
-                                showDialog.value = true
+                        coroutineScope.launch(Dispatchers.IO) {
+                            taskScreenInput.getTimeEntry(timeEntry.id)?.let {
+                                timeEntryEditUiState.value =
+                                    timeEntryEditUiState.value.copy(
+                                        waiting = false,
+                                        timeEntry = it
+                                    )
                             }
-                        },
-                        taskScreenInput.deleteTimeEntry
-                    )
-                }
+                            showDialog.value = true
+                        }
+                    },
+                    taskScreenInput.deleteTimeEntry
+                )
+
+
             }
+
         }
+
 
         fun inputDirtyAndValid(): Boolean {
             return inputText.value.isNotBlank()
@@ -340,10 +348,9 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
             setShowDialog = { show ->
                 showDialog.value = show
             }, addTimeEntry = { start, stop ->
-                if(editTimeEntry.longValue != 0L) {
+                if (editTimeEntry.longValue != 0L) {
                     taskScreenInput.updateTimeEntry(editTimeEntry.value, start, stop)
-                }
-                else {
+                } else {
                     taskScreenInput.addTimeEntry(start, stop)
                 }
             })
@@ -366,16 +373,23 @@ fun TimeEntryRow(
     navigateToTimeEditScreen: (Long) -> Unit,
     deleteTimeEntry: (Long) -> Unit
 ) {
-    Column(modifier = Modifier.padding(start = 5.dp, top = 5.dp)) {
+
+
+    Surface(modifier = Modifier.padding(bottom = 5.dp, start = 5.dp, end = 5.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Text(text = getDateTimeText(timeEntry.start))
+            Column(modifier = Modifier.padding(start = 5.dp, end = 5.dp, top = 5.dp, bottom = 5.dp)) {
+                Text(text = getDateTimeText(timeEntry.start))
 
-            timeEntry.stop?.let {
-                Text(getDateTimeText(it))
+                timeEntry.stop?.let {
+                    Text(getDateTimeText(it))
+                }
             }
 
             Spacer(Modifier.weight(1f))

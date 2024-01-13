@@ -10,10 +10,12 @@ import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.database.TimeEntryDay
 import timber.log.Timber
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.random.Random
 
 
 val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("E d. M")
@@ -111,8 +113,8 @@ fun addTestData(appDatabase: AppDatabase) {
     }
 
     // The same date as the one above, but with a different task
-    val startTimeEntry7= LocalDate.now().minusDays(4).atTime(15, 0).toInstant(ZoneOffset.UTC)
-    val timeEntry7= TimeEntry(
+    val startTimeEntry7 = LocalDate.now().minusDays(4).atTime(15, 0).toInstant(ZoneOffset.UTC)
+    val timeEntry7 = TimeEntry(
         0, task2.taskId, startTimeEntry7,
         startTimeEntry7.plusSeconds(7200)
     ).also {
@@ -144,9 +146,30 @@ fun addTestData(appDatabase: AppDatabase) {
     addTagToTask(tag2, task, appDatabase)
     addTagToTask(tag3, task3, appDatabase)
 
-    val tasksWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries()
+    addTimeEntriesToTasks(listOf(task, task2, task3), appDatabase)
+}
 
-    Timber.tag("Task").i("Tasks with time entries: ${tasksWithTimeEntries.size}")
+private fun addTimeEntriesToTasks(tasks: Collection<Task>, appDatabase: AppDatabase) {
+    val random = Random(1)
+
+    for (task in tasks) {
+        var current = Instant.now().minusSeconds(random.nextLong(600, 3600))
+
+        for (i in 0 until 10) {
+            val duration = Duration.ofSeconds(random.nextLong(600, 3600))
+            LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
+                ZoneOffset.UTC
+            )
+
+            addTimeEntry(
+                TimeEntry(
+                    0, task.taskId, current.minus(duration), current
+                ), appDatabase
+            )
+
+            current = current.minus(duration).minusSeconds(random.nextLong(600, 3600))
+        }
+    }
 
 }
 
