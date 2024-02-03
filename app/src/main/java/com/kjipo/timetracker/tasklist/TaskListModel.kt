@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
 import java.time.Instant.now
 
 class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
@@ -88,9 +89,25 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         viewModelState.update {
             viewModelState.value.copy(
                 tasks = taskRepository.getTasksWithTimeEntries()
-                    .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
+                    .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) }
+                    .sortedBy { taskUi ->
+                        // If there are no time entries assume the task is new
+                        // and should be near the top of the list
+                        taskUi.mostRecentStopTime ?: now()
+                    }.sortedBy { taskUi ->
+                        // The sort is stable so this second sort will only move tasks
+                        // that are ongoing to the top of the list and leave the other
+                        // elements in the order provided by the first sort
+                        if (taskUi.isOngoing()) {
+                            0
+                        } else {
+                            1
+                        }
+                    }
+            )
         }
     }
+
 
     private fun transformTaskToUiTask(task: TaskWithTimeEntries): TaskUi {
         return TaskUi(task.task.taskId,
@@ -131,7 +148,13 @@ data class TaskUi(
     val project: TaskMarkUiElement? = null
 ) {
 
-    fun getCurrentStart(): TimeEntry? {
+    val mostRecentStopTime: Instant? = timeEntries.maxOfOrNull { timeEntry ->
+        // If there is no stop time, the task is still ongoing
+        timeEntry.stop ?: now()
+    }
+
+
+    private fun getCurrentStart(): TimeEntry? {
         return timeEntries.find { it.stop == null }
     }
 
