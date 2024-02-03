@@ -28,6 +28,7 @@ import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
 import com.kjipo.timetracker.weekview.WeekViewModel
 import com.kjipo.timetracker.weekview.WeekViewScreen
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -45,47 +46,59 @@ fun TimeTrackerScaffold(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                drawerItems.forEach { drawerItem ->
-                    NavigationDrawerItem(label = {
-                        Text(drawerItem.name)
-                    },
-                        selected = drawerItem == selectedItem.value,
-                        onClick = {
-                            scope.launch {
-                                drawerState.close()
-                                selectedItem.value = drawerItem
-                                appState.navigateToScreen(drawerItem.name)
-                            }
-                        })
-                }
-
-                NavigationDrawerItem(label = {
-                    Text("Setup test data")
-                },
-                    selected = false,
-                    onClick = {
-                        scope.launch(Dispatchers.IO) {
-                            appContainer.appDatabase.clearAllTables()
-                            addTestData(appContainer.appDatabase)
-                        }
-                    })
-
-                NavigationDrawerItem(label = {
-                    Text("Clear database")
-                },
-                    selected = false,
-                    onClick = {
-                        scope.launch(Dispatchers.IO) {
-                            appContainer.appDatabase.clearAllTables()
-                        }
-                    })
-            }
+            SetupModalDrawer(drawerItems, selectedItem, scope, drawerState, appState, appContainer)
         })
     {
         MainContentScaffold(appState, appContainer)
     }
 
+}
+
+@Composable
+private fun SetupModalDrawer(
+    drawerItems: List<Screens>,
+    selectedItem: MutableState<Screens>,
+    scope: CoroutineScope,
+    drawerState: DrawerState,
+    appState: TimeTrackerAppState,
+    appContainer: AppContainer
+) {
+    ModalDrawerSheet {
+        drawerItems.forEach { drawerItem ->
+            NavigationDrawerItem(label = {
+                Text(drawerItem.name)
+            },
+                selected = drawerItem == selectedItem.value,
+                onClick = {
+                    scope.launch {
+                        drawerState.close()
+                        selectedItem.value = drawerItem
+                        appState.navigateToScreen(drawerItem.name)
+                    }
+                })
+        }
+
+        NavigationDrawerItem(label = {
+            Text("Setup test data")
+        },
+            selected = false,
+            onClick = {
+                scope.launch(Dispatchers.IO) {
+                    appContainer.appDatabase.clearAllTables()
+                    addTestData(appContainer.appDatabase)
+                }
+            })
+
+        NavigationDrawerItem(label = {
+            Text("Clear database")
+        },
+            selected = false,
+            onClick = {
+                scope.launch(Dispatchers.IO) {
+                    appContainer.appDatabase.clearAllTables()
+                }
+            })
+    }
 }
 
 
