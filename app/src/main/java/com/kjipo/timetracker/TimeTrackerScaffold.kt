@@ -1,5 +1,6 @@
 package com.kjipo.timetracker
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -102,12 +103,30 @@ private fun SetupModalDrawer(
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainContentScaffold(
     appState: TimeTrackerAppState,
     appContainer: AppContainer
 ) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
+
     Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Top bar") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                ), actions = {
+                    Button(onClick = {
+                        showBottomSheet = true
+                    }) {
+                        Text("Test bottom sheet")
+                    }
+                })
+        },
         bottomBar = {
             TimeTrackerBottomBar(appState::navigateToScreen)
         },
@@ -129,94 +148,120 @@ private fun MainContentScaffold(
             )
         }
     ) { paddingValues ->
-        NavHost(
-            navController = appState.navController,
-            startDestination = Screens.TASKS.name,
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            composable(Screens.TASKS.name) {
-                GoToTasksScreen(appContainer, appState)
-            }
+        SetupNavHost(appState, paddingValues, appContainer)
 
-            composable(Screens.REPORTS.name) {
-                val reportsModel = ReportsModel(appContainer.taskRepository)
-                ReportScreen(reportsModel)
-            }
+        if (showBottomSheet) {
+            ModalBottomSheet(onDismissRequest = {
+                showBottomSheet = false
+            }, sheetState = sheetState) {
+                Button(onClick = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showBottomSheet = false
+                        }
 
-            composable(Screens.WEEKVIEW.name) {
-                val weekViewModel = WeekViewModel(appContainer.taskRepository)
-                WeekViewScreen(weekViewModel)
-            }
-
-            composable(
-                "${Screens.TASK.name}/{taskId}",
-                arguments = listOf(navArgument("taskId") {
-                    type = NavType.LongType
-                })
-            ) { navBackStackEntry ->
-                GoToTaskScreen(navBackStackEntry, appContainer, appState)
-            }
-
-            composable(
-                "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
-                arguments = listOf(navArgument("timeEntryId") {
-                    type = NavType.LongType
-                })
-            ) { navBackStackEntry ->
-                GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
-            }
-
-            composable(
-                "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
-                arguments = listOf(navArgument("timeEntryId") {
-                    type = NavType.LongType
-                })
-            ) { navBackStackEntry ->
-                GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
-            }
-
-            composable(Screens.TAGS.name) {
-                GoToTaskMarkersList(true, appContainer, appState)
-            }
-
-            composable(Screens.PROJECTS.name) {
-                GoToTaskMarkersList(false, appContainer, appState)
-            }
-
-            composable(
-                "${Screens.TAG.name}/{tagId}",
-                arguments = listOf(navArgument("tagId") {
-                    type = NavType.LongType
-                })
-            ) { navBackStackEntry ->
-                GoToTaskMarkerScreen(
-                    appContainer,
-                    true,
-                    navBackStackEntry.arguments?.getLong("tagId"),
-                    appState
-                )
-            }
-
-            composable(
-                "${Screens.PROJECT.name}/{projectId}",
-                arguments = listOf(navArgument("projectId") {
-                    type = NavType.LongType
-                })
-            ) { navBackStackEntry ->
-                GoToTaskMarkerScreen(
-                    appContainer,
-                    false,
-                    navBackStackEntry.arguments?.getLong("projectId"),
-                    appState
-                )
-            }
-
-            composable(Screens.EXPORT.name) {
-                ExportScreen()
+                    }
+                }) {
+                    Text("Hide bottom sheet")
+                }
             }
         }
     }
 
+}
+
+@Composable
+private fun SetupNavHost(
+    appState: TimeTrackerAppState,
+    paddingValues: PaddingValues,
+    appContainer: AppContainer
+) {
+    NavHost(
+        navController = appState.navController,
+        startDestination = Screens.TASKS.name,
+        modifier = Modifier.padding(paddingValues)
+    ) {
+        composable(Screens.TASKS.name) {
+            GoToTasksScreen(appContainer, appState)
+        }
+
+        composable(Screens.REPORTS.name) {
+            val reportsModel = ReportsModel(appContainer.taskRepository)
+            ReportScreen(reportsModel)
+        }
+
+        composable(Screens.WEEKVIEW.name) {
+            val weekViewModel = WeekViewModel(appContainer.taskRepository)
+            WeekViewScreen(weekViewModel)
+        }
+
+        composable(
+            "${Screens.TASK.name}/{taskId}",
+            arguments = listOf(navArgument("taskId") {
+                type = NavType.LongType
+            })
+        ) { navBackStackEntry ->
+            GoToTaskScreen(navBackStackEntry, appContainer, appState)
+        }
+
+        composable(
+            "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
+            arguments = listOf(navArgument("timeEntryId") {
+                type = NavType.LongType
+            })
+        ) { navBackStackEntry ->
+            GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
+        }
+
+        composable(
+            "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
+            arguments = listOf(navArgument("timeEntryId") {
+                type = NavType.LongType
+            })
+        ) { navBackStackEntry ->
+            GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
+        }
+
+        composable(Screens.TAGS.name) {
+            GoToTaskMarkersList(true, appContainer, appState)
+        }
+
+        composable(Screens.PROJECTS.name) {
+            GoToTaskMarkersList(false, appContainer, appState)
+        }
+
+        composable(
+            "${Screens.TAG.name}/{tagId}",
+            arguments = listOf(navArgument("tagId") {
+                type = NavType.LongType
+            })
+        ) { navBackStackEntry ->
+            GoToTaskMarkerScreen(
+                appContainer,
+                true,
+                navBackStackEntry.arguments?.getLong("tagId"),
+                appState
+            )
+        }
+
+        composable(
+            "${Screens.PROJECT.name}/{projectId}",
+            arguments = listOf(navArgument("projectId") {
+                type = NavType.LongType
+            })
+        ) { navBackStackEntry ->
+            GoToTaskMarkerScreen(
+                appContainer,
+                false,
+                navBackStackEntry.arguments?.getLong("projectId"),
+                appState
+            )
+        }
+
+        composable(Screens.EXPORT.name) {
+            ExportScreen()
+        }
+    }
 }
 
 @Composable
