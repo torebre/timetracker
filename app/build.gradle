@@ -54,7 +54,8 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion '1.4.0'
+        // https://developer.android.com/jetpack/androidx/releases/compose-compiler
+        kotlinCompilerExtensionVersion '1.5.10'
     }
     packagingOptions {
         resources {
