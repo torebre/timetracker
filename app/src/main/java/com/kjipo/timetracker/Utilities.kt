@@ -8,7 +8,6 @@ import com.kjipo.timetracker.database.TagTasksCrossRef
 import com.kjipo.timetracker.database.Task
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.database.TimeEntryDay
-import timber.log.Timber
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -20,6 +19,7 @@ import kotlin.random.Random
 
 val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("E d. M")
 val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("kk:mm:ss")
+val exportDateFormat: DateTimeFormatter = DateTimeFormatter.ISO_DATE
 
 
 fun Duration.toHoursPartHelper(): Int {

@@ -259,7 +259,7 @@ private fun SetupNavHost(
         }
 
         composable(Screens.EXPORT.name) {
-            ExportScreen()
+            ExportScreen(appContainer.taskRepository)
         }
     }
 }
