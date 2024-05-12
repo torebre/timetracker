@@ -76,16 +76,6 @@ class TaskScreenModel(
     }
 
     private suspend fun loadTask() {
-//        taskRepository.getTags().forEach { tag ->
-//            taskRepository.getTasksForTag(tag.tagId).forEach { tagWithTaskEntries ->
-//                Timber.tag("TaskScreenModel").i(
-//                    "Tag: ${tagWithTaskEntries.tag.title}. Task entries: ${
-//                        tagWithTaskEntries.taskEntries.map { it.title }.joinToString(",")
-//                    }"
-//                )
-//            }
-//        }
-
         taskRepository.getTaskWithTimeEntries(taskId)?.let { taskWithTimeEntries ->
             val tagIds = taskWithTimeEntries.tags.map { it.tagId }
             val availableTags = taskRepository.getTags()
@@ -99,7 +89,8 @@ class TaskScreenModel(
             viewModelState.update { taskScreenUiState ->
                 taskScreenUiState.copy(
                     taskUi = TaskUi(taskWithTimeEntries),
-                    timeEntries = taskWithTimeEntries.timeEntries.map { TimeEntryUi(it) },
+                    timeEntries = taskWithTimeEntries.timeEntries.map { TimeEntryUi(it) }
+                        .sortedByDescending { it.stop },
                     tags = taskWithTimeEntries.tags.map { TaskMarkUiElement(it) },
                     initialLoading = false,
                     availableTags = availableTags,
