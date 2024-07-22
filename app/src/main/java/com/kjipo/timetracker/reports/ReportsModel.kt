@@ -47,25 +47,84 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
                 SelectedTimeRange.CUSTOM -> {
                     viewModelState.value.customRange
                 }
-
             }
 
-            // TODO Need to get individual time entries and add them together, the task can have entries that should not be part of the summary
-            val timeEntries = taskRepository.getTasksWithTimeEntries(
-                startAndStopTime.startTime,
-                startAndStopTime.stopTime
-            )
-
-            Timber.tag("Report").d("Number of time entries: ${timeEntries.size}")
-
-            viewModelState.update {
-                it.copy(
-                    selectedTimeRange = timeRange,
-                    projectSummaries = transformTimeEntriesToProjectSummaries(timeEntries)
-                )
-            }
+            updateTimeSummaries(startAndStopTime, timeRange)
         }
 
+    }
+
+    private suspend fun updateTimeSummaries() {
+        updateTimeSummaries(
+            viewModelState.value.customRange,
+            viewModelState.value.selectedTimeRange
+        )
+    }
+
+    private suspend fun updateTimeSummaries(
+        startAndStopTime: DateRange,
+        timeRange: SelectedTimeRange
+    ) {
+        // TODO Need to get individual time entries and add them together, the task can have entries that should not be part of the summary
+        val timeEntries = taskRepository.getTasksWithTimeEntries(
+            startAndStopTime.startTime,
+            startAndStopTime.stopTime
+        )
+
+        Timber.tag("Report").d("Number of time entries: ${timeEntries.size}")
+
+        viewModelState.update {
+            it.copy(
+                selectedTimeRange = timeRange,
+                projectSummaries = transformTimeEntriesToProjectSummaries(timeEntries),
+                taskSummaries = transformEntriesToTaskSummaries(timeEntries, startAndStopTime)
+            )
+        }
+    }
+
+    private fun transformEntriesToTaskSummaries(
+        tasksWithTimeEntries: List<TaskWithTimeEntries>,
+        dateRange: DateRange
+    ): List<TaskSummary> {
+        val startInstant =
+            dateRange.startTime.toInstant(ZoneId.systemDefault().rules.getOffset(dateRange.startTime))
+        val stopInstant =
+            dateRange.stopTime.toInstant(ZoneId.systemDefault().rules.getOffset(dateRange.stopTime))
+
+        return tasksWithTimeEntries.map { taskWithTimeEntry ->
+            val totalTimeForUsedForTaskInDateRange =
+                taskWithTimeEntry.timeEntries.map { timeEntry ->
+                    val timeEntryStop = timeEntry.stop
+
+                    if (timeEntry.start.isAfter(stopInstant)) {
+                        null
+                    } else if (timeEntryStop != null && timeEntryStop.isBefore(startInstant)) {
+                        null
+                    } else {
+                        val start = if (timeEntry.start.isBefore(startInstant)) {
+                            startInstant
+                        } else {
+                            timeEntry.start
+                        }
+
+                        val stop =
+                            if (timeEntryStop == null || timeEntryStop.isAfter(stopInstant)) {
+                                stopInstant
+                            } else {
+                                timeEntryStop
+                            }
+
+                        Duration.between(start, stop)
+                    }
+                }
+                    .filterNotNull()
+                    .sumOf { it.seconds }
+
+            TaskSummary(
+                taskWithTimeEntry.task.title,
+                Duration.ofSeconds(totalTimeForUsedForTaskInDateRange)
+            )
+        }.toList()
     }
 
     private suspend fun transformTimeEntriesToProjectSummaries(tasksWithTimeEntries: List<TaskWithTimeEntries>): List<ProjectSummary> {
@@ -147,7 +206,8 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         projectIdDurationMap: MutableMap<Long, Duration>
     ) {
 
-        Timber.tag("Report").d("Task ID: ${task.task.taskId}. Project ID: ${task.task.projectId}. Duration: ${timeEntry.getDurationMissingStopSetToNow()}")
+        Timber.tag("Report")
+            .d("Task ID: ${task.task.taskId}. Project ID: ${task.task.projectId}. Duration: ${timeEntry.getDurationMissingStopSetToNow()}")
 
         if (task.task.projectId == null) {
             addDurationToProject(
@@ -176,6 +236,22 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
             projectIdDurationMap[projectId] = duration
         }
 
+    }
+
+    fun setCustomDateRange(start: LocalDateTime, stop: LocalDateTime) {
+        viewModelScope.launch(Dispatchers.IO) {
+
+            viewModelState.update {
+                viewModelState.value.copy(
+                    customRange = DateRange(
+                        start,
+                        stop
+                    )
+                )
+            }
+
+            updateTimeSummaries()
+        }
     }
 
     companion object {
@@ -218,7 +294,8 @@ data class ReportsUiState(
     val selectedTimeRange: SelectedTimeRange = SelectedTimeRange.DAY,
     val pieChartData: PieChartData? = null,
     val projectSummaries: List<ProjectSummary> = emptyList(),
-    val customRange: DateRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now())
+    val customRange: DateRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now()),
+    val taskSummaries: List<TaskSummary> = emptyList()
 )
 
 data class ProjectSummary(
@@ -227,6 +304,8 @@ data class ProjectSummary(
     val duration: Duration,
     val percentage: Double
 )
+
+data class TaskSummary(val title: String, val duration: Duration)
 
 data class DateRange(
     val startTime: LocalDateTime,

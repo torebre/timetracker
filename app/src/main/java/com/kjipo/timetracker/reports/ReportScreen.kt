@@ -8,11 +8,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -21,35 +28,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.kjipo.timetracker.formatDuration
+import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
+import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
+import timber.log.Timber
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 
 @Composable
 fun ReportScreen(reportsModel: ReportsModel) {
     val uiState = reportsModel.uiState.collectAsState()
 
-    ReportScreen(uiState) { selectedTimeRange ->
+    ReportScreen(uiState, { selectedTimeRange ->
         reportsModel.setSelectedTimeRange(selectedTimeRange)
-    }
+    }, { start, stop ->
+        reportsModel.setCustomDateRange(start, stop)
+    })
 }
 
 @Composable
-fun ReportScreen(uiState: State<ReportsUiState>, onTabSelected: (SelectedTimeRange) -> Unit) {
+fun ReportScreen(uiState: State<ReportsUiState>,
+                 onTabSelected: (SelectedTimeRange) -> Unit,
+                 customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit) {
     val uiStateValue = uiState.value
-    ReportScreen(uiState = uiStateValue, onTabSelected = onTabSelected)
+    ReportScreen(uiStateValue, onTabSelected, customDateRangeChanged)
 }
 
 @Composable
-fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit) {
+fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit,
+                 customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit) {
     val selectedTab = remember { mutableStateOf(SelectedTimeRange.DAY) }
+    val showDialog = remember { mutableStateOf(false) }
 
     Column {
         ScrollableTabRow(
             selectedTabIndex = selectedTab.value.ordinal,
             modifier = Modifier.height(50.dp)
-            ) {
+        ) {
             SelectedTimeRange.values().forEachIndexed { index, timeRange ->
                 Tab(selected = index == selectedTab.value.ordinal,
                     onClick = {
@@ -61,18 +82,41 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
             }
         }
 
-//        Column {
-        ProjectSummaryList(uiState)
+        if (selectedTab.value == SelectedTimeRange.CUSTOM) {
+            Button(onClick = {
+                showDialog.value = true
+            }) {
+                Text("Select range")
+            }
 
-        PieChartReport(uiState.pieChartData)
+        }
+
+        if (showDialog.value) {
+            DateRangeModal(setShowDialog = { input ->
+                showDialog.value = input
+            }, { start, stop ->
+                if(start != null && stop != null) {
+                    val startInstant = Instant.ofEpochMilli(start)
+                    val stopInstant = Instant.ofEpochMilli(stop)
+                    customDateRangeChanged(LocalDateTime.ofInstant(startInstant, ZoneId.systemDefault()),
+                        LocalDateTime.ofInstant(stopInstant, ZoneId.systemDefault()))
+                }
+            })
+        }
+
+//        Column {
+//        ProjectSummaryList(uiState)
+
+        Timber.tag("Report").d("Number of tasks summaries: ${uiState.taskSummaries.size}")
+
+        TaskSummaryList(uiState)
+
+//        PieChartReport(uiState.pieChartData)
 
 //            Column(modifier = Modifier.fillMaxWidth()) {
 //        DateRangePicker(state = state, modifier = Modifier.weight(1f))
 
         // TODO Get file to export to
-
-        // TODO Just here for testing
-//    CalendarComponent(calendarUiState = CalendarUiState())
 
 //            }
 
@@ -80,6 +124,45 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
 
     }
 }
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateRangeModal(
+    setShowDialog: (Boolean) -> Unit,
+    setDateRange: (start: Long?, stop: Long?) -> Unit
+) {
+    val state = rememberDateRangePickerState()
+    DateRangePicker(state = state)
+
+    Dialog(onDismissRequest = { setShowDialog(false) }) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column {
+                Row {
+                    Button(onClick = {
+                        setDateRange(state.selectedStartDateMillis, state.selectedEndDateMillis)
+                        setShowDialog(false)
+                    }) {
+                        Text("Save")
+                    }
+
+                    Button(onClick = {
+                        setShowDialog(false)
+                    }) {
+                        Text("Cancel")
+                    }
+
+                }
+                    DateRangePicker(state = state)
+            }
+        }
+    }
+
+}
+
 
 @Composable
 fun ProjectSummaryList(uiState: ReportsUiState) {
@@ -96,13 +179,43 @@ fun ProjectSummaryList(uiState: ReportsUiState) {
 @Composable
 fun ProjectSummaryScreen(projectSummary: ProjectSummary) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        Text(style = MaterialTheme.typography.headlineSmall,
-            text = projectSummary.title)
+        Text(
+            style = MaterialTheme.typography.headlineSmall,
+            text = projectSummary.title
+        )
 
         Spacer(modifier = Modifier.weight(0.1f))
 
         Text(formatDuration(projectSummary.duration))
         Text(modifier = Modifier.padding(start = 5.dp), text = "(${projectSummary.percentage} %)")
+    }
+}
+
+
+@Composable
+fun TaskSummaryList(uiState: ReportsUiState) {
+    val state = rememberLazyListState()
+    LazyColumn(state = state) {
+        for (taskSummary in uiState.taskSummaries) {
+            item {
+                TaskSummaryRow(taskSummary)
+            }
+        }
+    }
+}
+
+
+@Composable
+fun TaskSummaryRow(taskSummary: TaskSummary) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            style = MaterialTheme.typography.headlineSmall,
+            text = taskSummary.title
+        )
+
+        Spacer(modifier = Modifier.weight(0.1f))
+
+        Text(formatDuration(taskSummary.duration))
     }
 }
 
@@ -161,9 +274,8 @@ fun ReportScreenPreview() {
 //        mutableStateOf(uiState)
 //    }
 
-    ReportScreen(uiState) { selectedTimeRange ->
-        // Do nothing
-
-    }
+//    ReportScreen(uiState) { selectedTimeRange ->
+//        // Do nothing
+//    }
 
 }
