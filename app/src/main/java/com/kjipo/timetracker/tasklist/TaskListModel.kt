@@ -23,6 +23,8 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     private val viewModelState = MutableStateFlow(TaskListUiState())
 
+    private var sortOrder = SortOrder.DEFAULT
+
     val uiState = viewModelState.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
@@ -74,6 +76,13 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+    fun setSortOrder(sortOrder: SortOrder) {
+        this.sortOrder = sortOrder
+        viewModelScope.launch(Dispatchers.IO) {
+            reloadTasks()
+        }
+    }
+
 
     private fun refreshOngoingTasks(tasks: List<TaskUi>): List<TaskUi> {
         return tasks.map {
@@ -88,24 +97,41 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     private suspend fun reloadTasks() {
         viewModelState.update {
             viewModelState.value.copy(
-                tasks = taskRepository.getTasksWithTimeEntries()
-                    .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) }
-                    .sortedBy { taskUi ->
-                        // If there are no time entries assume the task is new
-                        // and should be near the top of the list
-                        taskUi.mostRecentStopTime ?: now()
-                    }.sortedBy { taskUi ->
-                        // The sort is stable so this second sort will only move tasks
-                        // that are ongoing to the top of the list and leave the other
-                        // elements in the order provided by the first sort
-                        if (taskUi.isOngoing()) {
-                            0
-                        } else {
-                            1
-                        }
-                    }
+                tasks = getSortFunction(taskRepository.getTasksWithTimeEntries()
+                    .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
             )
         }
+    }
+
+    private fun getSortFunction(iterable: Iterable<TaskUi>): List<TaskUi> {
+        return when(sortOrder) {
+            SortOrder.DEFAULT -> {
+                 iterable.sortedBy { taskUi ->
+                    // If there are no time entries assume the task is new
+                    // and should be near the top of the list
+                    taskUi.mostRecentStopTime ?: now()
+                }.sortedBy { taskUi ->
+                    // The sort is stable so this second sort will only move tasks
+                    // that are ongoing to the top of the list and leave the other
+                    // elements in the order provided by the first sort
+                    if (taskUi.isOngoing()) {
+                        0
+                    } else {
+                        1
+                    }
+                }
+            }
+
+            SortOrder.RECENTLY_USED -> {
+                iterable.sortedBy { taskUi ->
+                    taskUi.lastUpdated?.toEpochMilli() ?: 0
+                }
+
+            }
+
+
+        }
+
     }
 
 
@@ -117,7 +143,8 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
             tags = task.tags.map { TaskMarkUiElement(it) },
             project = task.project?.let {
                 TaskMarkUiElement(it)
-            })
+            },
+            lastUpdated = task.task.lastUpdated)
     }
 
     companion object {
@@ -145,7 +172,8 @@ data class TaskUi(
     val timeEntries: List<TimeEntry>,
     val totalDuration: Duration,
     val tags: List<TaskMarkUiElement> = emptyList(),
-    val project: TaskMarkUiElement? = null
+    val project: TaskMarkUiElement? = null,
+    val lastUpdated: Instant? = null
 ) {
 
     val mostRecentStopTime: Instant? = timeEntries.maxOfOrNull { timeEntry ->

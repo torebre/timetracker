@@ -1,8 +1,10 @@
 package com.kjipo.timetracker.database
 
 import androidx.room.Transaction
+import com.kjipo.timetracker.tasklist.SortOrder
 import java.time.Duration
 import java.time.Instant
+import java.time.Instant.now
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -26,7 +28,8 @@ interface TaskRepository {
 
     suspend fun getTasksWithTimeEntries(
         startTime: LocalDateTime? = null,
-        stopTime: LocalDateTime? = null
+        stopTime: LocalDateTime? = null,
+        sortOrder: SortOrder = SortOrder.DEFAULT
     ): List<TaskWithTimeEntries>
 
     suspend fun addTimeEntry(timeEntry: TimeEntry)
@@ -87,7 +90,7 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     @Transaction
     override suspend fun createTask(title: String, tags: List<Tag>, project: Project?): Task {
-        val newTask = Task(0, title, projectId = project?.projectId)
+        val newTask = Task(0, title, projectId = project?.projectId, lastUpdated = now())
         appDatabase.taskDao().insertTask(newTask).also { newTask.taskId = it }
         for (tag in tags) {
             addTag(newTask.taskId, tag.tagId)
@@ -106,9 +109,14 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun getTasksWithTimeEntries(
         startTime: LocalDateTime?,
-        stopTime: LocalDateTime?
+        stopTime: LocalDateTime?,
+        sortOrder: SortOrder
     ): List<TaskWithTimeEntries> {
-        val taskWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries()
+        val sortColumn = when (sortOrder) {
+            SortOrder.DEFAULT -> "id"
+            SortOrder.RECENTLY_USED -> "lastUpdated"
+        }
+        val taskWithTimeEntries = appDatabase.taskDao().getTasksWithTimeEntries(sortColumn)
 
         if (startTime == null && stopTime == null) {
             return taskWithTimeEntries
@@ -144,6 +152,11 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         stop: Instant?
     ): TimeEntry? {
         return appDatabase.timeEntryDao().getTimeEntry(timeEntryId)?.let { timeEntry ->
+
+            appDatabase.taskDao().getTask(timeEntry.taskId)?.let { task ->
+                appDatabase.taskDao().updateLastActiveForTask(task)
+            }
+
             timeEntry.start = start
             timeEntry.stop = stop
             appDatabase.timeEntryDao().updateTimeEntry(timeEntry)
@@ -173,6 +186,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
                     appDatabase.taskDao().insertTaskAndTagCrossRef(TagTasksCrossRef(tagId, taskId))
                 }
             }
+        }
+
+        appDatabase.taskDao().getTask(taskId)?.let { task ->
+            appDatabase.taskDao().updateLastActiveForTask(task)
         }
     }
 

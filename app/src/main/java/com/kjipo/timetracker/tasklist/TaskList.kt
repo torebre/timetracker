@@ -224,7 +224,6 @@ fun TaskRow(taskRowInput: TaskRowInput) {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier) {
     Badge(modifier = modifier, containerColor = tagUi.colour ?: Color.White) {

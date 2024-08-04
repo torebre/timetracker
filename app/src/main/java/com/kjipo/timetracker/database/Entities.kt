@@ -65,7 +65,8 @@ data class TimeEntryDay(
 data class Task(
     @PrimaryKey(autoGenerate = true) var taskId: Long = 0,
     val title: String,
-    val projectId: Long? = null
+    val projectId: Long? = null,
+    val lastUpdated: Instant? = null
 )
 
 @Entity

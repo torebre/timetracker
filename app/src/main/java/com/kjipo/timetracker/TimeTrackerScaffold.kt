@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
@@ -21,6 +22,7 @@ import com.kjipo.timetracker.taglistscreen.TagModel
 import com.kjipo.timetracker.taglistscreen.TagListScreen
 import com.kjipo.timetracker.tagscreen.TaskMarkElementScreen
 import com.kjipo.timetracker.tagscreen.TagScreenModel
+import com.kjipo.timetracker.tasklist.SortOrder
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
 import com.kjipo.timetracker.taskscreen.TaskScreen
@@ -112,6 +114,14 @@ private fun MainContentScaffold(
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showFilterModal by remember { mutableStateOf(false) }
+
+    val taskListModel: TaskListModel = viewModel(
+        factory = TaskListModel.provideFactory(
+            appContainer.taskRepository
+        )
+    )
 
     Scaffold(
         topBar = {
@@ -120,10 +130,24 @@ private fun MainContentScaffold(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
                 ), actions = {
+                    if (appState.screenShowing.value == Screens.TASKS) {
+                        Button(onClick = {
+                            showFilterModal = true
+                            // TODO
+
+                        }) {
+                            Text("Filter")
+                        }
+                        Button(onClick = {
+                            showSortMenu = true
+                        }) {
+                            Text("Sort")
+                        }
+                    }
                     Button(onClick = {
                         showBottomSheet = true
                     }) {
-                        Text("Test bottom sheet")
+                        Text("Test")
                     }
                 })
         },
@@ -148,7 +172,35 @@ private fun MainContentScaffold(
             )
         }
     ) { paddingValues ->
-        SetupNavHost(appState, paddingValues, appContainer)
+        SetupNavHost(appState, paddingValues, appContainer, taskListModel)
+
+        if (showFilterModal) {
+            FilterModal { show ->
+                showFilterModal = show
+            }
+        }
+
+        if (showSortMenu) {
+            DropdownMenu(expanded = showSortMenu,
+                onDismissRequest = { showSortMenu = false }) {
+                DropdownMenuItem(text = {
+                    Text("Recently used")
+                },
+                    onClick = {
+                        taskListModel.setSortOrder(SortOrder.RECENTLY_USED)
+                        showSortMenu = false
+
+                    })
+                DropdownMenuItem(text = {
+                    Text("Default")
+                },
+                    onClick = {
+                        taskListModel.setSortOrder(SortOrder.DEFAULT)
+                        showSortMenu = false
+                    })
+            }
+
+        }
 
         if (showBottomSheet) {
             ModalBottomSheet(onDismissRequest = {
@@ -174,7 +226,8 @@ private fun MainContentScaffold(
 private fun SetupNavHost(
     appState: TimeTrackerAppState,
     paddingValues: PaddingValues,
-    appContainer: AppContainer
+    appContainer: AppContainer,
+    taskListModel: TaskListModel
 ) {
     NavHost(
         navController = appState.navController,
@@ -182,7 +235,7 @@ private fun SetupNavHost(
         modifier = Modifier.padding(paddingValues)
     ) {
         composable(Screens.TASKS.name) {
-            GoToTasksScreen(appContainer, appState)
+            GoToTasksScreen(appContainer, appState, taskListModel)
         }
 
         composable(Screens.REPORTS.name) {
@@ -317,13 +370,14 @@ private fun GoToTaskMarkersList(
 @Composable
 private fun GoToTasksScreen(
     appContainer: AppContainer,
-    appState: TimeTrackerAppState
+    appState: TimeTrackerAppState,
+    taskListModel: TaskListModel
 ) {
-    val taskListModel: TaskListModel = viewModel(
-        factory = TaskListModel.provideFactory(
-            appContainer.taskRepository
-        )
-    )
+//    val taskListModel: TaskListModel = viewModel(
+//        factory = TaskListModel.provideFactory(
+//            appContainer.taskRepository
+//        )
+//    )
     taskListModel.refresh()
 
     TaskList(taskListModel, { taskId ->
@@ -471,4 +525,18 @@ fun FloatingAddButton(contentDescription: String, onClickHandler: () -> Unit) {
         )
     }
 
+}
+
+
+@Composable
+fun FilterModal(
+    setShowDialog: (Boolean) -> Unit,
+) {
+    Dialog(onDismissRequest = { setShowDialog(false) }) {
+        Button({
+            setShowDialog(false)
+        }) {
+            Text("Close")
+        }
+    }
 }

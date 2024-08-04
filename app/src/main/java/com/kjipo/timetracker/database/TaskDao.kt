@@ -2,6 +2,7 @@ package com.kjipo.timetracker.database
 
 import androidx.room.*
 import java.time.Instant
+import java.time.Instant.now
 
 
 @Dao
@@ -16,6 +17,10 @@ interface TaskDao {
     @Delete
     fun deleteTask(task: Task)
 
+    fun updateLastActiveForTask(task: Task) {
+        updateTask(task.copy(lastUpdated = now()))
+    }
+
     @Query("SELECT * FROM task")
     fun getTasks(): List<Task>
 
@@ -24,8 +29,8 @@ interface TaskDao {
     fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries?
 
     @Transaction
-    @Query("SELECT * FROM task")
-    fun getTasksWithTimeEntries(): List<TaskWithTimeEntries>
+    @Query("SELECT * FROM task ORDER BY :sortColumn")
+    fun getTasksWithTimeEntries(sortColumn: String): List<TaskWithTimeEntries>
 
     @Query("SELECT * FROM task WHERE task.taskId = :taskId")
     fun getTask(taskId: Long): Task?

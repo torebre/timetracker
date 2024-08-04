@@ -3,6 +3,7 @@ package com.kjipo.timetracker
 import android.content.Context
 import androidx.room.Room
 import com.kjipo.timetracker.database.AppDatabase
+import com.kjipo.timetracker.database.MIGRATION_7_8
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskRepositoryImpl
 
@@ -18,8 +19,8 @@ class AppContainerImpl(private val applicationContext: Context) : AppContainer {
 
     override val appDatabase: AppDatabase by lazy {
         Room.databaseBuilder(applicationContext, AppDatabase::class.java, "app-database")
-            // TODO Only here while developing
-            .fallbackToDestructiveMigration()
+//            .fallbackToDestructiveMigration()
+            .addMigrations(MIGRATION_7_8)
             .build()
     }
 
