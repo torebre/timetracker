@@ -63,11 +63,10 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
                     // No ongoing entries, create a new time entry to start the task
                     taskRepository.addTimeEntry(TimeEntry(0, taskId, now()))
                 }
+
+                reloadTasks()
             }
-
-            reloadTasks()
         }
-
     }
 
     fun refresh() {
@@ -95,18 +94,22 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     private suspend fun reloadTasks() {
+        val tasks = getSortFunction(taskRepository.getTasksWithTimeEntries()
+            .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
+        val activeTasks = tasks.filter { it.isOngoing() }.map { it.id }
+
         viewModelState.update {
             viewModelState.value.copy(
-                tasks = getSortFunction(taskRepository.getTasksWithTimeEntries()
-                    .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
+                activeTasks = activeTasks,
+                tasks = tasks
             )
         }
     }
 
     private fun getSortFunction(iterable: Iterable<TaskUi>): List<TaskUi> {
-        return when(sortOrder) {
+        return when (sortOrder) {
             SortOrder.DEFAULT -> {
-                 iterable.sortedBy { taskUi ->
+                iterable.sortedBy { taskUi ->
                     // If there are no time entries assume the task is new
                     // and should be near the top of the list
                     taskUi.mostRecentStopTime ?: now()
@@ -136,7 +139,8 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
 
     private fun transformTaskToUiTask(task: TaskWithTimeEntries): TaskUi {
-        return TaskUi(task.task.taskId,
+        return TaskUi(
+            task.task.taskId,
             task.task.title,
             task.timeEntries,
             task.timeEntries.computeTotalDuration(),
@@ -144,7 +148,8 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
             project = task.project?.let {
                 TaskMarkUiElement(it)
             },
-            lastUpdated = task.task.lastUpdated)
+            lastUpdated = task.task.lastUpdated
+        )
     }
 
     companion object {
@@ -163,53 +168,5 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 }
 
 
-data class TaskListUiState(val tasks: List<TaskUi> = emptyList())
 
 
-data class TaskUi(
-    val id: Long,
-    val title: String,
-    val timeEntries: List<TimeEntry>,
-    val totalDuration: Duration,
-    val tags: List<TaskMarkUiElement> = emptyList(),
-    val project: TaskMarkUiElement? = null,
-    val lastUpdated: Instant? = null
-) {
-
-    val mostRecentStopTime: Instant? = timeEntries.maxOfOrNull { timeEntry ->
-        // If there is no stop time, the task is still ongoing
-        timeEntry.stop ?: now()
-    }
-
-
-    private fun getCurrentStart(): TimeEntry? {
-        return timeEntries.find { it.stop == null }
-    }
-
-    fun isOngoing() = getCurrentStart() != null
-
-    fun getCurrentDuration(): Duration? {
-        return getCurrentStart()?.let {
-            Duration.between(it.start, now())
-        }
-    }
-
-    fun computeTotalDuration(): Duration {
-        return timeEntries.computeTotalDuration()
-    }
-
-    fun computeDurationOfNotOpenEntries(): Duration {
-        return timeEntries.mapNotNull { it.getDuration() }.sumOf { it.toMillis() }
-            .let { Duration.ofMillis(it) }
-    }
-
-}
-
-fun List<TimeEntry>.computeTotalDuration(): Duration {
-    return sumOf { timeEntry ->
-        val stop = timeEntry.stop ?: now()
-        stop.toEpochMilli() - timeEntry.start.toEpochMilli()
-    }
-        .let { Duration.ofMillis(it) }
-
-}

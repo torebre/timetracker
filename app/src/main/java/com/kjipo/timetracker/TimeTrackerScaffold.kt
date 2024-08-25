@@ -380,10 +380,11 @@ private fun GoToTasksScreen(
 //    )
     taskListModel.refresh()
 
-    TaskList(taskListModel, { taskId ->
-        appState.navigateToScreen("${Screens.TASK.name}/$taskId")
-    },
-        { taskId ->
+    TaskList(taskListModel,
+        navigateToTaskScreen = { taskId ->
+            appState.navigateToScreen("${Screens.TASK.name}/$taskId")
+        },
+        toggleStartStop = { taskId ->
             taskListModel.toggleStartStop(taskId)
         }
     )

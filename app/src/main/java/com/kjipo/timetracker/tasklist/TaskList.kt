@@ -14,13 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Badge
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -106,6 +106,7 @@ fun TaskList(
     navigateToTaskScreen: (Long) -> Unit,
     toggleStartStop: (Long) -> Unit
 ) {
+    // TODO What does collectAsStateWithLifecycle do?
     val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
 
     TaskList(TaskListInputParameters(uiState.value, navigateToTaskScreen, toggleStartStop))
@@ -114,26 +115,63 @@ fun TaskList(
 
 @Composable
 fun TaskList(taskListInputParameters: TaskListInputParameters) {
+//    val activeTasks = remember {
+//        taskListInputParameters.taskListUiState.activeTasks
+//    }
 
-    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(items = taskListInputParameters.taskListUiState.tasks,
-            key = { taskUi ->
-                taskUi.id
-            }) { task ->
-            Surface(
-                modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
-            ) {
-                TaskRow(
-                    TaskRowInput(
-                        task,
+    val activeTasks = taskListInputParameters.taskListUiState.activeTasks
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        activeTasks.forEach { activeTaskId ->
+            taskListInputParameters.taskListUiState.tasks.find { it.id == activeTaskId }
+                ?.let { activeTask ->
+                    TaskListEntry(
+                        activeTask,
                         taskListInputParameters.navigateToTaskScreen,
                         taskListInputParameters.toggleStartStop
                     )
+                }
+        }
+
+        Spacer(modifier = Modifier.padding(5.dp))
+
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            items(items = taskListInputParameters.taskListUiState.tasks.filter {
+                !activeTasks.contains(
+                    it.id
+                )
+            },
+                key = { taskUi ->
+                    taskUi.id
+                }) { task ->
+                TaskListEntry(
+                    task,
+                    taskListInputParameters.navigateToTaskScreen,
+                    taskListInputParameters.toggleStartStop
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun TaskListEntry(
+    taskUi: TaskUi,
+    navigateToTaskScreen: (Long) -> Unit,
+    toggleStartStop: (Long) -> Unit
+) {
+    Surface(
+        modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+    ) {
+        TaskRow(
+            TaskRowInput(
+                taskUi,
+                navigateToTaskScreen,
+                toggleStartStop
+            )
+        )
     }
 }
 
@@ -236,7 +274,7 @@ fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier) {
 @Composable
 private fun ShowPreview() {
     val previewTasks = getPreviewTasks()
-    TaskList(TaskListInputParameters(TaskListUiState(previewTasks), {
+    TaskList(TaskListInputParameters(TaskListUiState(tasks = previewTasks), {
 
     }, {
 
