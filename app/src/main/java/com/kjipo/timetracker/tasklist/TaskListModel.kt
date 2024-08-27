@@ -113,22 +113,13 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
                     // If there are no time entries assume the task is new
                     // and should be near the top of the list
                     taskUi.mostRecentStopTime ?: now()
-                }.sortedBy { taskUi ->
-                    // The sort is stable so this second sort will only move tasks
-                    // that are ongoing to the top of the list and leave the other
-                    // elements in the order provided by the first sort
-                    if (taskUi.isOngoing()) {
-                        0
-                    } else {
-                        1
-                    }
-                }
+                }.reversed()
             }
 
             SortOrder.RECENTLY_USED -> {
                 iterable.sortedBy { taskUi ->
                     taskUi.lastUpdated?.toEpochMilli() ?: 0
-                }
+                }.reversed()
 
             }
 
