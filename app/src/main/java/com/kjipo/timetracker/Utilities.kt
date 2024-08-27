@@ -21,7 +21,6 @@ val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("E d. M")
 val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("kk:mm:ss")
 val exportDateFormat: DateTimeFormatter = DateTimeFormatter.ISO_DATE
 
-fun Duration.toHoursPartHelper() = toHours() % 24
 
 fun Duration.toMinutesPartHelper() = toMinutes() % 60
 
@@ -198,16 +197,10 @@ fun addTimeEntryDay(timeEntryDay: TimeEntryDay, appDatabase: AppDatabase) {
 
 fun formatDuration(duration: Duration): String {
     with(duration) {
-        val days = toDays()
-        val hours = toTwoDigits(toHoursPartHelper())
+        val hours = duration.toHours()
         val minutes = toTwoDigits(toMinutesPartHelper())
         val seconds = toTwoDigits(toSecondsPartHelper())
 
-        return if (days > 0) {
-            "$days $hours:$minutes:$seconds"
-        } else {
-            "$hours:$minutes:$seconds"
-        }
-
+        return "$hours:$minutes:$seconds"
     }
 }

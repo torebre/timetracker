@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -122,13 +124,16 @@ fun TaskList(taskListInputParameters: TaskListInputParameters) {
     val activeTasks = taskListInputParameters.taskListUiState.activeTasks
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        Spacer(modifier = Modifier.padding(top = 8.dp))
+
         activeTasks.forEach { activeTaskId ->
             taskListInputParameters.taskListUiState.tasks.find { it.id == activeTaskId }
                 ?.let { activeTask ->
                     TaskListEntry(
                         activeTask,
                         taskListInputParameters.navigateToTaskScreen,
-                        taskListInputParameters.toggleStartStop
+                        taskListInputParameters.toggleStartStop,
+                        true
                     )
                 }
         }
@@ -147,7 +152,8 @@ fun TaskList(taskListInputParameters: TaskListInputParameters) {
                 TaskListEntry(
                     task,
                     taskListInputParameters.navigateToTaskScreen,
-                    taskListInputParameters.toggleStartStop
+                    taskListInputParameters.toggleStartStop,
+                    false
                 )
             }
         }
@@ -158,106 +164,114 @@ fun TaskList(taskListInputParameters: TaskListInputParameters) {
 private fun TaskListEntry(
     taskUi: TaskUi,
     navigateToTaskScreen: (Long) -> Unit,
-    toggleStartStop: (Long) -> Unit
+    toggleStartStop: (Long) -> Unit,
+    showAsActive: Boolean
 ) {
+    val color = if (showAsActive) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+
     Surface(
         modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = color,
         shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
     ) {
         TaskRow(
-            TaskRowInput(
-                taskUi,
-                navigateToTaskScreen,
-                toggleStartStop
-            )
+            taskUi,
+            navigateToTaskScreen,
+            toggleStartStop,
+            showAsActive
         )
     }
 }
 
 
-class TaskRowInput(
-    val task: TaskUi,
-    val navigateToTaskScreen: (Long) -> Unit,
-    val toggleStartStop: (Long) -> Unit
-)
-
-
 @Composable
-fun TaskRow(taskRowInput: TaskRowInput) {
+fun TaskRow(
+    task: TaskUi,
+    navigateToTaskScreen: (Long) -> Unit,
+    toggleStartStop: (Long) -> Unit,
+    showAsActive: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .padding(5.dp)
+            .fillMaxWidth(),
+    ) {
+        Column {
+            Text(
+                modifier = Modifier
+                    .clickable {
+                        navigateToTaskScreen(task.id)
+                    },
+                style = MaterialTheme.typography.headlineSmall,
+                text = task.title
+            )
 
-    Column(modifier = Modifier.padding(8.dp)) {
-        Text(
-            modifier = Modifier
-                .clickable {
-                    taskRowInput.navigateToTaskScreen(taskRowInput.task.id)
-                }
-                .fillMaxWidth(),
-            style = MaterialTheme.typography.headlineSmall,
-            text = taskRowInput.task.title
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-        ) {
-            Column {
+            if (showAsActive) {
                 Row {
                     Text(modifier = Modifier.defaultMinSize(70.dp), text = "Current:")
                     Text(
                         text =
-                        taskRowInput.task.getCurrentDuration()?.let {
+                        task.getCurrentDuration()?.let {
                             formatDuration(it)
                         } ?: ""
                     )
                 }
+            }
 
+            Row {
+                Text(modifier = Modifier.defaultMinSize(70.dp), text = "Total:")
+                Text(
+                    text = formatDuration(task.computeDurationOfNotOpenEntries())
+                )
+            }
+
+            if (task.tags.isNotEmpty()) {
                 Row {
-                    Text(modifier = Modifier.defaultMinSize(70.dp), text = "Total:")
-                    Text(
-                        text = formatDuration(taskRowInput.task.computeDurationOfNotOpenEntries())
-                    )
+                    task.tags.forEachIndexed { index, tagUi ->
+                        val modifier = if (index == 0) {
+                            Modifier.padding()
+                        } else {
+                            Modifier.padding(start = 5.dp)
+                        }
+                        Tag(tagUi, modifier)
+                    }
                 }
             }
 
-            // This is to push the buttons to the end of the row
-            Spacer(Modifier.weight(1f))
-
-            IconButton(modifier = Modifier.padding(end = 5.dp),
-                onClick = {
-                    taskRowInput.toggleStartStop(taskRowInput.task.id)
-                }) {
-                if (taskRowInput.task.isOngoing()) {
-                    // TODO Use better icon
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Stop"
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Start"
-                    )
+            task.project?.let { project ->
+                Row(modifier = Modifier.padding(top = 5.dp)) {
+                    Tag(project, Modifier)
                 }
             }
         }
 
-        Row {
-            taskRowInput.task.tags.forEachIndexed { index, tagUi ->
-                val modifier = if (index == 0) {
-                    Modifier.padding()
-                } else {
-                    Modifier.padding(start = 5.dp)
-                }
-                Tag(tagUi, modifier)
+        // This is to push the buttons to the end of the row
+        Spacer(Modifier.weight(1f))
+
+        IconButton(modifier = Modifier
+            .padding(end = 5.dp)
+            .align(Alignment.CenterVertically),
+            onClick = {
+                toggleStartStop(task.id)
+            }) {
+            if (task.isOngoing()) {
+                // TODO Use better icon
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Stop"
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Start"
+                )
             }
         }
 
-        Row(modifier = Modifier.padding(top = 5.dp)) {
-            taskRowInput.task.project?.let {
-                Tag(it, Modifier)
-            }
-        }
     }
 }
 

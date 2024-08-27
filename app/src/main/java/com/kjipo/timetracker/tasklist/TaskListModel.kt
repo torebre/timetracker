@@ -15,9 +15,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.time.Duration
-import java.time.Instant
 import java.time.Instant.now
+
 
 class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
@@ -122,8 +121,6 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
                 }.reversed()
 
             }
-
-
         }
 
     }
