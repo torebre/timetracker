@@ -18,8 +18,8 @@ import androidx.navigation.compose.composable
 import com.kjipo.timetracker.export.ExportScreen
 import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
-import com.kjipo.timetracker.taglistscreen.TagModel
-import com.kjipo.timetracker.taglistscreen.TagListScreen
+import com.kjipo.timetracker.taskmarkelementlistscreen.TaskMarkerModel
+import com.kjipo.timetracker.taskmarkelementlistscreen.TagListScreen
 import com.kjipo.timetracker.tagscreen.TaskMarkElementScreen
 import com.kjipo.timetracker.tagscreen.TagScreenModel
 import com.kjipo.timetracker.tasklist.SortOrder
@@ -34,6 +34,7 @@ import com.kjipo.timetracker.weekview.WeekViewScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 
 @Composable
@@ -335,13 +336,13 @@ private fun GoToTaskMarkerScreen(
         taskMarkerModel.setCurrentTag(it)
     }
 
-    TaskMarkElementScreen(taskMarkerModel) {
+    TaskMarkElementScreen(taskMarkerModel, navigateToElementList = {
         if (isTag) {
             appState.navigateToScreen(Screens.TAGS.name)
         } else {
             appState.navigateToScreen(Screens.PROJECTS.name)
         }
-    }
+    })
 }
 
 @Composable
@@ -350,20 +351,22 @@ private fun GoToTaskMarkersList(
     appContainer: AppContainer,
     appState: TimeTrackerAppState
 ) {
-    val tagModel: TagModel = viewModel(
-        factory = TagModel.provideFactory(
+    val tagModel: TaskMarkerModel = viewModel(
+        factory = TaskMarkerModel.provideFactory(
             isTag,
             appContainer.taskRepository
         )
     )
 
-    TagListScreen(tagModel) {
+    TagListScreen(tagModel, goToTagScreen = { id: Long ->
+        Timber.tag("TaskMarkerList").i("Going to element $id")
+
         if (isTag) {
-            appState.navigateToScreen("${Screens.TAG.name}/${it}")
+            appState.navigateToScreen("${Screens.TAG.name}/${id}")
         } else {
-            appState.navigateToScreen("${Screens.PROJECT.name}/${it}")
+            appState.navigateToScreen("${Screens.PROJECT.name}/${id}")
         }
-    }
+    })
 }
 
 
