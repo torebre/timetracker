@@ -247,28 +247,33 @@ fun TaskRow(
                     Tag(project, Modifier)
                 }
             }
-        }
 
-        // This is to push the buttons to the end of the row
-        Spacer(Modifier.weight(1f))
+            // TODO Temporarily in its own row here to make the button visible then the title is long
+            Row {
+                // This is to push the buttons to the end of the row
+                Spacer(Modifier.weight(1f))
 
-        IconButton(modifier = Modifier
-            .padding(end = 5.dp)
-            .align(Alignment.CenterVertically),
-            onClick = {
-                toggleStartStop(task.id)
-            }) {
-            if (task.isOngoing()) {
-                // TODO Use better icon
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Stop"
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Start"
-                )
+                IconButton(modifier = Modifier
+                    .padding(end = 5.dp)
+                    .align(Alignment.CenterVertically),
+                    onClick = {
+                        toggleStartStop(task.id)
+                    }) {
+                    if (task.isOngoing()) {
+                        // TODO Use better icon
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Stop"
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Start"
+                        )
+                    }
+                }
+
+
             }
         }
 
