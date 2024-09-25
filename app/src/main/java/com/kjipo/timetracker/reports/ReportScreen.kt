@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -204,13 +205,16 @@ fun TaskSummaryList(uiState: ReportsUiState) {
 fun TaskSummaryRow(taskSummary: TaskSummary) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(
+            modifier = Modifier.weight(0.8f),
             style = MaterialTheme.typography.headlineSmall,
-            text = taskSummary.title
+            text = taskSummary.title,
+            overflow = TextOverflow.Ellipsis
         )
 
         Spacer(modifier = Modifier.weight(0.1f))
 
-        Text(formatDuration(taskSummary.duration))
+        Text(modifier = Modifier.weight(0.2f),
+            text = formatDuration(taskSummary.duration))
     }
 }
 
