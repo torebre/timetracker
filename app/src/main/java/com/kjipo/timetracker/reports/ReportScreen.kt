@@ -24,14 +24,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.kjipo.timetracker.formatDuration
 import timber.log.Timber
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -216,65 +213,4 @@ fun TaskSummaryRow(taskSummary: TaskSummary) {
         Text(modifier = Modifier.weight(0.2f),
             text = formatDuration(taskSummary.duration))
     }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun ReportScreenPreview() {
-    val pieChartData = PieChartData(
-        listOf(
-            PieChartEntry(1, 10, Color.Green),
-            PieChartEntry(2, 50, Color.Yellow)
-        )
-    )
-
-    val projectSummaries = listOf(
-        ProjectSummary(
-            1L,
-            "Test project",
-            Duration.ofMinutes(100),
-            10.0
-        ),
-        ProjectSummary(
-            2L,
-            "Test project2",
-            Duration.ofMinutes(200),
-            10.0
-        ),
-
-        ProjectSummary(
-            2L,
-            "Test project3",
-            Duration.ofMinutes(300),
-            10.0
-        )
-    )
-
-
-    val pieChartDataWeek = PieChartData(
-        listOf(
-            PieChartEntry(1, 10, Color.Green),
-            PieChartEntry(2, 50, Color.Yellow),
-            PieChartEntry(2, 5, Color.hsl(200f, 1f, 0.5f)),
-            PieChartEntry(2, 5, Color.hsl(30f, 1f, 0.5f)),
-            PieChartEntry(2, 30, Color.hsl(150f, 1f, 0.5f)),
-        )
-    )
-
-    val uiState = ReportsUiState(
-        selectedTimeRange = SelectedTimeRange.DAY,
-        pieChartData = pieChartDataWeek,
-        projectSummaries = projectSummaries,
-        customRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now())
-    )
-
-//    val mutableUiState = remember {
-//        mutableStateOf(uiState)
-//    }
-
-//    ReportScreen(uiState) { selectedTimeRange ->
-//        // Do nothing
-//    }
-
 }
