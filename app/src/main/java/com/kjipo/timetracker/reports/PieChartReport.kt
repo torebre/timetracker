@@ -2,7 +2,7 @@ package com.kjipo.timetracker.reports
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -32,7 +32,7 @@ class PieChartReportParameterProvider : PreviewParameterProvider<ReportsUiState>
 
 @Composable
 fun PieChartReport(pieChartData: PieChartData?) {
-    val backgroundColour = MaterialTheme.colors.background
+    val backgroundColour = MaterialTheme.colorScheme.background
 
     Canvas(modifier = Modifier.size(100.dp)) {
         scale(scaleX = 1f, scaleY = 1f) {
