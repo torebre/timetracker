@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
@@ -431,7 +430,6 @@ fun TimeEntryRow(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier, removeTag: () -> Unit) {
     InputChip(modifier = modifier,
@@ -442,12 +440,10 @@ fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier, removeTag: () -> Unit) {
         },
         colors = inputChipColors(
             selectedContainerColor = tagUi.colour
-                ?: androidx.compose.material3.MaterialTheme.colorScheme.background
-
+                ?: MaterialTheme.colorScheme.background
         ),
         label = { Text(tagUi.title) },
         trailingIcon = { Icons.Default.Close })
-
 }
 
 
