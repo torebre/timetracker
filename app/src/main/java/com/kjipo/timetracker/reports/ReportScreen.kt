@@ -3,6 +3,7 @@ package com.kjipo.timetracker.reports
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.kjipo.timetracker.formatDuration
 import timber.log.Timber
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -46,16 +48,20 @@ fun ReportScreen(reportsModel: ReportsModel) {
 }
 
 @Composable
-fun ReportScreen(uiState: State<ReportsUiState>,
-                 onTabSelected: (SelectedTimeRange) -> Unit,
-                 customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit) {
+fun ReportScreen(
+    uiState: State<ReportsUiState>,
+    onTabSelected: (SelectedTimeRange) -> Unit,
+    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit
+) {
     val uiStateValue = uiState.value
     ReportScreen(uiStateValue, onTabSelected, customDateRangeChanged)
 }
 
 @Composable
-fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit,
-                 customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit) {
+fun ReportScreen(
+    uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit,
+    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit
+) {
     val selectedTab = remember { mutableStateOf(SelectedTimeRange.DAY) }
     val showDialog = remember { mutableStateOf(false) }
 
@@ -64,7 +70,7 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
             selectedTabIndex = selectedTab.value.ordinal,
             modifier = Modifier.height(50.dp)
         ) {
-            SelectedTimeRange.values().forEachIndexed { index, timeRange ->
+            SelectedTimeRange.entries.forEachIndexed { index, timeRange ->
                 Tab(selected = index == selectedTab.value.ordinal,
                     onClick = {
                         onTabSelected(timeRange)
@@ -88,11 +94,13 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
             DateRangeModal(setShowDialog = { input ->
                 showDialog.value = input
             }, { start, stop ->
-                if(start != null && stop != null) {
+                if (start != null && stop != null) {
                     val startInstant = Instant.ofEpochMilli(start)
                     val stopInstant = Instant.ofEpochMilli(stop)
-                    customDateRangeChanged(LocalDateTime.ofInstant(startInstant, ZoneId.systemDefault()),
-                        LocalDateTime.ofInstant(stopInstant, ZoneId.systemDefault()))
+                    customDateRangeChanged(
+                        LocalDateTime.ofInstant(startInstant, ZoneId.systemDefault()),
+                        LocalDateTime.ofInstant(stopInstant, ZoneId.systemDefault())
+                    )
                 }
             })
         }
@@ -103,6 +111,9 @@ fun ReportScreen(uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> 
         Timber.tag("Report").d("Number of tasks summaries: ${uiState.taskSummaries.size}")
 
         TaskSummaryList(uiState)
+
+        TaskSummarySum(uiState)
+
 
 //        PieChartReport(uiState.pieChartData)
 
@@ -149,7 +160,7 @@ fun DateRangeModal(
                     }
 
                 }
-                    DateRangePicker(state = state)
+                DateRangePicker(state = state)
             }
         }
     }
@@ -188,7 +199,9 @@ fun ProjectSummaryScreen(projectSummary: ProjectSummary) {
 @Composable
 fun TaskSummaryList(uiState: ReportsUiState) {
     val state = rememberLazyListState()
-    LazyColumn(state = state) {
+    LazyColumn(
+        state = state
+    ) {
         for (taskSummary in uiState.taskSummaries) {
             item {
                 TaskSummaryRow(taskSummary)
@@ -210,7 +223,25 @@ fun TaskSummaryRow(taskSummary: TaskSummary) {
 
         Spacer(modifier = Modifier.weight(0.1f))
 
-        Text(modifier = Modifier.weight(0.2f),
-            text = formatDuration(taskSummary.duration))
+        Text(
+            modifier = Modifier.weight(0.2f),
+            text = formatDuration(taskSummary.duration)
+        )
+    }
+}
+
+@Composable
+fun TaskSummarySum(uiState: ReportsUiState) {
+    Surface(
+        modifier = Modifier.padding(bottom = 8.dp, start = 5.dp, end = 5.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Sum")
+            Spacer(modifier = Modifier.weight(0.1f))
+            Text(text = formatDuration(Duration.ofSeconds(uiState.taskSummaries.map { it.duration }
+                .sumOf { it.seconds })))
+        }
     }
 }
