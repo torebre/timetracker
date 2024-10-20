@@ -283,8 +283,13 @@ fun TaskRow(
 
 @Composable
 fun Tag(tagUi: TaskMarkUiElement, modifier: Modifier) {
-    Badge(modifier = modifier, containerColor = tagUi.colour ?: Color.White) {
-        Text(tagUi.title)
+    Tag(tagUi.title, colour = tagUi.colour, modifier = modifier)
+}
+
+@Composable
+fun Tag(title: String, colour: Color?, modifier: Modifier) {
+    Badge(modifier = modifier, containerColor = colour ?: Color.White) {
+        Text(title)
     }
 }
 

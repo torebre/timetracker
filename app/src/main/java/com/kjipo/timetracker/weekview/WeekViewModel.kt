@@ -2,6 +2,8 @@ package com.kjipo.timetracker.weekview
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kjipo.timetracker.database.Project
+import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import kotlinx.coroutines.Dispatchers
@@ -71,50 +73,69 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
         return tasksForDay.groupBy { it.task }
             .map { entry ->
                 val totalDuration = entry.value.map { tasksWithTimeEntries ->
-                    val durationTimeEntries = if (tasksWithTimeEntries.timeEntries.isEmpty()) {
-                        Duration.ZERO
-                    } else {
-                        tasksWithTimeEntries.getTimeEntriesCompletelyWithinInterval(localDate.atStartOfDay()
-                            .let {
-                                it.toInstant(ZoneId.systemDefault().rules.getOffset(it))
-                            },
-                            localDate.atTime(23, 59, 59).let {
-                                it.toInstant(ZoneId.systemDefault().rules.getOffset(it))
-                            }).let { timeEntriesToInclude ->
-                            if (timeEntriesToInclude.isEmpty()) {
-                                Duration.ZERO
-                            } else {
-                                timeEntriesToInclude.map { timeEntry ->
-                                    timeEntry.getDurationMissingStopSetToNow()
-                                }.reduce { duration1, duration2 ->
-                                    duration1.plus(duration2)
-                                }
-                            }
-                        }
-                    }
-
+                    val durationTimeEntries = computeDurationForDay(tasksWithTimeEntries, localDate)
                     // These are entries with no specific start or stop time.
                     // They consist of a day and a duration
-                    val durationDayEntries =
-                        tasksWithTimeEntries.getTimeDayEntriesForDate(localDate)
-                            .let { timeEntriesToInclude ->
-                                if (timeEntriesToInclude.isEmpty()) {
-                                    Duration.ZERO
-                                } else {
-                                    timeEntriesToInclude.map {
-                                        it.duration
-                                    }.reduce { duration1, duration2 ->
-                                        duration1.plus(duration2)
-                                    }
-                                }
-                            }
+                    val durationDayEntries = getDurationDayEntries(tasksWithTimeEntries, localDate)
 
                     durationTimeEntries.plus(durationDayEntries)
                 }.reduce { duration1, duration2 ->
                     duration1.plus(duration2)
                 }
-                DayTaskSummary(entry.key.title, totalDuration)
+
+                val firstEntry = entry.value.firstOrNull()
+                DayTaskSummary(
+                    entry.key.title, totalDuration,
+                    firstEntry?.project,
+                    firstEntry?.tags ?: emptyList()
+                )
             }
+    }
+
+    private fun getDurationDayEntries(
+        tasksWithTimeEntries: TaskWithTimeEntries,
+        localDate: LocalDate
+    ): Duration {
+        tasksWithTimeEntries.getTimeDayEntriesForDate(localDate)
+            .let { timeEntriesToInclude ->
+                if (timeEntriesToInclude.isEmpty()) {
+                    return Duration.ZERO
+                } else {
+                    return timeEntriesToInclude.map {
+                        it.duration
+                    }.reduce { duration1, duration2 ->
+                        duration1.plus(duration2)
+                    }
+                }
+            }
+    }
+
+    private fun computeDurationForDay(
+        tasksWithTimeEntries: TaskWithTimeEntries,
+        localDate: LocalDate
+    ): Duration {
+        if (tasksWithTimeEntries.timeEntries.isEmpty()) {
+            Duration.ZERO
+        }
+
+        return tasksWithTimeEntries.getTimeEntriesCompletelyWithinInterval(
+            localDate.atStartOfDay()
+                .let {
+                    it.toInstant(ZoneId.systemDefault().rules.getOffset(it))
+                },
+            localDate.atTime(23, 59, 59).let {
+                it.toInstant(ZoneId.systemDefault().rules.getOffset(it))
+            }).let { timeEntriesToInclude ->
+            if (timeEntriesToInclude.isEmpty()) {
+                Duration.ZERO
+            } else {
+                timeEntriesToInclude.map { timeEntry ->
+                    timeEntry.getDurationMissingStopSetToNow()
+                }.reduce { duration1, duration2 ->
+                    duration1.plus(duration2)
+                }
+            }
+        }
     }
 
     companion object {
@@ -129,7 +150,12 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
 }
 
 
-data class DayTaskSummary(val title: String, val duration: Duration)
+data class DayTaskSummary(
+    val title: String,
+    val duration: Duration,
+    val project: Project?,
+    val tags: List<Tag>
+)
 
 data class DaySummary(
     val date: LocalDate,

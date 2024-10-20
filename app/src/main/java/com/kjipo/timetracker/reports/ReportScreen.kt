@@ -3,7 +3,6 @@ package com.kjipo.timetracker.reports
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,10 +24,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.kjipo.timetracker.database.Project
+import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.formatDuration
+import com.kjipo.timetracker.tasklist.Tag
 import timber.log.Timber
 import java.time.Duration
 import java.time.Instant
@@ -199,6 +202,7 @@ fun ProjectSummaryScreen(projectSummary: ProjectSummary) {
 @Composable
 fun TaskSummaryList(uiState: ReportsUiState) {
     val state = rememberLazyListState()
+
     LazyColumn(
         state = state
     ) {
@@ -213,11 +217,24 @@ fun TaskSummaryList(uiState: ReportsUiState) {
 
 @Composable
 fun TaskSummaryRow(taskSummary: TaskSummary) {
+    TaskSummaryRow(taskSummary.title,
+        taskSummary.duration,
+        taskSummary.project,
+        taskSummary.tags)
+}
+
+
+
+@Composable
+fun TaskSummaryRow(title: String,
+                   duration: Duration,
+                   project: Project?,
+                   tags: List<Tag>) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(
             modifier = Modifier.weight(0.8f),
             style = MaterialTheme.typography.headlineSmall,
-            text = taskSummary.title,
+            text = title,
             overflow = TextOverflow.Ellipsis
         )
 
@@ -225,8 +242,33 @@ fun TaskSummaryRow(taskSummary: TaskSummary) {
 
         Text(
             modifier = Modifier.weight(0.2f),
-            text = formatDuration(taskSummary.duration)
+            text = formatDuration(duration)
         )
+    }
+
+    if (tags.isNotEmpty()) {
+        Row {
+            tags.forEachIndexed { index, tagUi ->
+                val modifier = if (index == 0) {
+                    Modifier.padding()
+                } else {
+                    Modifier.padding(start = 5.dp)
+                }
+                val colour = tagUi.colour?.let {
+                    Color(it.red(), it.green(), it.blue())
+                }
+                Tag(tagUi.title, colour, modifier)
+            }
+        }
+    }
+
+    project?.let { selectedProject ->
+        Row(modifier = Modifier.padding(top = 5.dp)) {
+            val colour = selectedProject.colour?.let {
+                Color(it.red(), it.green(), it.blue())
+            }
+            Tag(selectedProject.title, colour, Modifier.padding())
+        }
     }
 }
 

@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.kjipo.timetracker.database.Project
+import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
@@ -30,6 +32,7 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     init {
         setSelectedTimeRange(SelectedTimeRange.DAY)
+        loadTags()
     }
 
 
@@ -52,6 +55,12 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
             updateTimeSummaries(startAndStopTime, timeRange)
         }
 
+    }
+
+    private fun loadTags() {
+        viewModelScope.launch(Dispatchers.IO) {
+            viewModelState.value = viewModelState.value.copy(tags = taskRepository.getTags())
+        }
     }
 
     private suspend fun updateTimeSummaries() {
@@ -93,7 +102,7 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
 
         return tasksWithTimeEntries.map { taskWithTimeEntry ->
             val totalTimeForUsedForTaskInDateRange =
-                taskWithTimeEntry.timeEntries.map { timeEntry ->
+                taskWithTimeEntry.timeEntries.mapNotNull { timeEntry ->
                     val timeEntryStop = timeEntry.stop
 
                     if (timeEntry.start.isAfter(stopInstant)) {
@@ -117,13 +126,13 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
                         Duration.between(start, stop)
                     }
                 }
-                    .filterNotNull()
                     .sumOf { it.seconds }
 
             TaskSummary(
                 taskWithTimeEntry.task.title,
-                Duration.ofSeconds(totalTimeForUsedForTaskInDateRange)
-            )
+                Duration.ofSeconds(totalTimeForUsedForTaskInDateRange),
+                taskWithTimeEntry.project,
+                taskWithTimeEntry.tags)
         }.toList()
     }
 
@@ -254,6 +263,7 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+
     companion object {
 
         const val noProjectId = -1L
@@ -295,7 +305,9 @@ data class ReportsUiState(
     val pieChartData: PieChartData? = null,
     val projectSummaries: List<ProjectSummary> = emptyList(),
     val customRange: DateRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now()),
-    val taskSummaries: List<TaskSummary> = emptyList()
+    val taskSummaries: List<TaskSummary> = emptyList(),
+    val tags: List<Tag> = emptyList(),
+    val selectedTags: List<Tag> = emptyList()
 )
 
 data class ProjectSummary(
@@ -305,7 +317,12 @@ data class ProjectSummary(
     val percentage: Double
 )
 
-data class TaskSummary(val title: String, val duration: Duration)
+data class TaskSummary(
+    val title: String,
+    val duration: Duration,
+    val project: Project?,
+    val tags: List<Tag>
+)
 
 data class DateRange(
     val startTime: LocalDateTime,

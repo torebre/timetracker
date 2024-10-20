@@ -1,5 +1,6 @@
 package com.kjipo.timetracker
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -118,10 +119,16 @@ private fun MainContentScaffold(
     var showSortMenu by remember { mutableStateOf(false) }
     var showFilterModal by remember { mutableStateOf(false) }
 
+    var showTagSelection by remember { mutableStateOf(false) }
+
     val taskListModel: TaskListModel = viewModel(
         factory = TaskListModel.provideFactory(
             appContainer.taskRepository
         )
+    )
+
+    val reportsModel: ReportsModel = viewModel(
+        factory = ReportsModel.provideFactory(appContainer.taskRepository)
     )
 
     Scaffold(
@@ -144,6 +151,10 @@ private fun MainContentScaffold(
                         }) {
                             Text("Sort")
                         }
+                    } else if (appState.screenShowing.value == Screens.REPORTS) {
+                        Button(onClick = {
+                            showTagSelection = true
+                        }) { Text("Tags") }
                     }
                     Button(onClick = {
                         showBottomSheet = true
@@ -173,12 +184,17 @@ private fun MainContentScaffold(
             )
         }
     ) { paddingValues ->
-        SetupNavHost(appState, paddingValues, appContainer, taskListModel)
+        SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel)
 
         if (showFilterModal) {
             FilterModal { show ->
                 showFilterModal = show
             }
+        }
+
+        if(showTagSelection) {
+            // TODO
+
         }
 
         if (showSortMenu) {
@@ -228,7 +244,8 @@ private fun SetupNavHost(
     appState: TimeTrackerAppState,
     paddingValues: PaddingValues,
     appContainer: AppContainer,
-    taskListModel: TaskListModel
+    taskListModel: TaskListModel,
+    reportsModel: ReportsModel
 ) {
     NavHost(
         navController = appState.navController,
@@ -240,7 +257,7 @@ private fun SetupNavHost(
         }
 
         composable(Screens.REPORTS.name) {
-            val reportsModel = ReportsModel(appContainer.taskRepository)
+//            val reportsModel = ReportsModel(appContainer.taskRepository)
             ReportScreen(reportsModel)
         }
 
@@ -538,6 +555,43 @@ fun FilterModal(
 ) {
     Dialog(onDismissRequest = { setShowDialog(false) }) {
         Button({
+            setShowDialog(false)
+        }) {
+            Text("Close")
+        }
+    }
+}
+
+@Composable
+fun TagSelectionModal(
+    tags: List<String>,
+    updateTagFilterList: (List<String>) -> Unit,
+    setShowDialog: (Boolean) -> Unit,
+) {
+    Dialog(onDismissRequest = { setShowDialog(false) }) {
+        val checkboxStates = remember {
+            tags.map { false }.toMutableStateList()
+        }
+
+        Column {
+            tags.forEachIndexed { index, value ->
+                Checkbox(checked = checkboxStates[index],
+                    onCheckedChange = { isChecked ->
+                        checkboxStates[index] = isChecked
+                    })
+            }
+
+        }
+
+        Button({
+            updateTagFilterList(checkboxStates.mapIndexed { index, value ->
+                if (value) {
+                    tags[index]
+                } else {
+                    null
+                }
+            }.filterNotNull())
+
             setShowDialog(false)
         }) {
             Text("Close")
