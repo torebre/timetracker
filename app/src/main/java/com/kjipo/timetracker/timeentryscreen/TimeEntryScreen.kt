@@ -14,9 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.kjipo.timetracker.database.TimeEntry
@@ -25,7 +22,6 @@ import com.kjipo.timetracker.timeFormatter
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 
 
 @Composable
@@ -41,25 +37,21 @@ fun TimeEntryScreen(
 
         uiState.timeEntry != null -> {
             TimeEntryInternal(
-                TimeEntryInternalParameters(
-                    uiState.timeEntry.timeEntryId,
-                    uiState.timeEntry.start,
-                    uiState.timeEntry.stop,
-                    updateOrCreateEntry,
-                    cancel
-                )
+                uiState.timeEntry.timeEntryId,
+                uiState.timeEntry.start,
+                uiState.timeEntry.stop,
+                updateOrCreateEntry,
+                cancel
             )
         }
 
         uiState.timeEntry == null -> {
             TimeEntryInternal(
-                TimeEntryInternalParameters(
-                    null,
-                    Instant.now().minusSeconds(300),
-                    Instant.now(),
-                    updateOrCreateEntry,
-                    cancel
-                )
+                null,
+                Instant.now().minusSeconds(300),
+                Instant.now(),
+                updateOrCreateEntry,
+                cancel
             )
         }
     }
@@ -75,47 +67,26 @@ private enum class TimeEntryShowing {
     DATE_PICKER_STOP
 }
 
-private class TimeEntryInternalParameterProvider :
-    PreviewParameterProvider<TimeEntryInternalParameters> {
 
-    override val values = sequenceOf(TimeEntryInternalParameters(
-        1L,
-        LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC),
-        LocalDateTime.of(2000, 5, 10, 5, 0, 0).toInstant(ZoneOffset.UTC),
-        { timeEntryId, start, stop ->
-            // Do nothing
-        },
-        {
-            // Do nothing
-        }
-    ))
-}
-
-
-class TimeEntryInternalParameters(
-    val timeEntryId: Long?,
-    val start: Instant,
-    val stop: Instant?,
-    val updateEntry: (timeEntryId: Long?, start: Instant, stop: Instant?) -> Unit,
-    val cancel: () -> Unit
-)
-
-@Preview(showBackground = true)
 @Composable
 fun TimeEntryInternal(
-    @PreviewParameter(TimeEntryInternalParameterProvider::class) timeEntryInternalParameters: TimeEntryInternalParameters
+    timeEntryId: Long?,
+    start: Instant,
+    stop: Instant?,
+    updateEntry: (timeEntryId: Long?, start: Instant, stop: Instant?) -> Unit,
+    cancel: () -> Unit
 ) {
     val screenShowing = remember {
         mutableStateOf(TimeEntryShowing.OVERVIEW)
     }
 
     val startTimeState = remember {
-        mutableStateOf(timeEntryInternalParameters.start)
+        mutableStateOf(start)
     }
 
     // TODO Does this work? Setting stop time to now if no stop is set for time
     val stopTimeState = remember {
-        mutableStateOf(timeEntryInternalParameters.stop ?: Instant.now())
+        mutableStateOf(stop ?: Instant.now())
     }
 
     Column(modifier = Modifier.padding(10.dp)) {
@@ -152,14 +123,14 @@ fun TimeEntryInternal(
             ) {
                 Button(
                     onClick = {
-                        timeEntryInternalParameters.updateEntry(
-                            timeEntryInternalParameters.timeEntryId,
+                        updateEntry(
+                            timeEntryId,
                             startTimeState.value,
                             stopTimeState.value
                         )
                     },
-                    enabled = startTimeState.value != timeEntryInternalParameters.start
-                            || stopTimeState.value != timeEntryInternalParameters.stop
+                    enabled = startTimeState.value != start
+                            || stopTimeState.value != stop
                 ) {
                     Text("Save")
                 }
@@ -167,7 +138,7 @@ fun TimeEntryInternal(
                 Button(
                     modifier = Modifier.padding(start = 5.dp),
                     onClick = {
-                        timeEntryInternalParameters.cancel()
+                        cancel()
                     },
                 ) {
                     Text("Cancel")

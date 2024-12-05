@@ -37,9 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
@@ -50,74 +47,12 @@ import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
-
-
-class TaskScreenParameterProvider : PreviewParameterProvider<TaskScreenInput> {
-
-    override val values = sequenceOf(
-        TaskScreenInput(
-            mutableStateOf(
-                TaskScreenUiState(
-                    TaskUi(
-                        1,
-                        "Task name"
-                    ),
-                    getExampleTimeEntries(),
-                    initialLoading = false
-                )
-            ),
-            { taskName, tags, project ->
-                // Do nothing
-            },
-            {
-                // Do nothing
-            },
-//            {
-//                // Do nothing
-//            },
-            { start, stop ->
-
-            },
-            { timeEntryId ->
-                null
-            },
-            { timeEntryId, start, stop ->
-
-            })
-    )
-
-    private fun getExampleTimeEntries() =
-        listOf(
-            TimeEntryUi(
-                1,
-                LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                    ZoneOffset.UTC
-                ),
-                LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                    ZoneOffset.UTC
-                )
-            ),
-            TimeEntryUi(
-                2,
-                LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                    ZoneOffset.UTC
-                ),
-                LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
-                    ZoneOffset.UTC
-                )
-            )
-        )
-
-}
 
 
 class TaskScreenInput(
     val taskScreenUiState: State<TaskScreenUiState>,
     val saveData: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
-//    val navigateToTimeEditScreen: (Long) -> Unit,
     val deleteTimeEntry: (Long) -> Unit,
     val addTimeEntry: (start: Instant, stop: Instant?) -> Unit,
     val getTimeEntry: suspend (Long) -> TimeEntry?,
@@ -132,9 +67,6 @@ fun TaskScreen(
         { title, tags, project ->
             taskScreenModel.saveTask(title, tags, project)
         },
-//        { timeEntryId ->
-//            appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/$timeEntryId")
-//        },
         { timeEntryId ->
             taskScreenModel.deleteTimeEntry(timeEntryId)
         }, { start, stop ->
@@ -148,7 +80,6 @@ fun TaskScreen(
 fun TaskScreen(
     taskScreenModel: TaskScreenModel,
     saveTask: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
-//    navigateToTimeEditScreen: (Long) -> Unit,
     deleteTimeEntry: (Long) -> Unit,
     addTimeEntry: (start: Instant, stop: Instant?) -> Unit,
 ) {
@@ -158,7 +89,6 @@ fun TaskScreen(
         TaskScreenInput(
             uiState,
             saveTask,
-//            navigateToTimeEditScreen,
             deleteTimeEntry,
             addTimeEntry,
             { timeEntryId ->
@@ -172,9 +102,8 @@ fun TaskScreen(
 }
 
 
-@Preview(showBackground = true)
 @Composable
-fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenInput: TaskScreenInput) {
+fun TaskScreen(taskScreenInput: TaskScreenInput) {
     val taskUiState = taskScreenInput.taskScreenUiState.value
 
     if (taskUiState.initialLoading) {
@@ -217,7 +146,11 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
 
     val coroutineScope = rememberCoroutineScope()
 
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 10.dp)
+    ) {
         Row {
             TextField(
                 value = inputText.value,
@@ -314,22 +247,14 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                     },
                     taskScreenInput.deleteTimeEntry
                 )
-
-
             }
-
         }
+    }
 
-
-        fun inputDirtyAndValid(): Boolean {
-            return inputText.value.isNotBlank()
-                    && (inputText.value != taskUiState.taskUi.taskName
-                    || !usedTags.value.containsAll(
-                taskUiState.tags
-            ) || !taskUiState.tags.containsAll(usedTags.value)
-                    || selectedProject.value != taskUiState.project)
-        }
-
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomEnd
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
@@ -338,20 +263,17 @@ fun TaskScreen(@PreviewParameter(TaskScreenParameterProvider::class) taskScreenI
                 onClick = {
                     taskScreenInput.saveData(inputText.value, usedTags.value, selectedProject.value)
                 },
-                enabled = inputDirtyAndValid()
+                enabled = inputText.value.isNotBlank()
+                        && (inputText.value != taskUiState.taskUi.taskName
+                        || !usedTags.value.containsAll(
+                    taskUiState.tags
+                ) || !taskUiState.tags.containsAll(usedTags.value)
+                        || selectedProject.value != taskUiState.project)
             ) {
                 Text("Save")
             }
         }
-
-//        FloatingAddButton(modifiercontentDescription = "Add time entry") {
-//            timeEntryEditUiState.value =
-//                timeEntryEditUiState.value.copy(waiting = false, timeEntry = null)
-//            editTimeEntry.longValue = 0
-//            showDialog.value = true
-//        }
     }
-
 
     if (showDialog.value) {
         TimeEntryDialog(
@@ -386,16 +308,26 @@ fun TimeEntryRow(
 ) {
 
 
-    Surface(modifier = Modifier.padding(bottom = 5.dp, start = 5.dp, end = 5.dp),
+    Surface(
+        modifier = Modifier.padding(bottom = 5.dp, start = 5.dp, end = 5.dp),
         color = MaterialTheme.colorScheme.tertiaryContainer,
         shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Column(modifier = Modifier.padding(start = 5.dp, end = 5.dp, top = 5.dp, bottom = 5.dp)) {
+            Column(
+                modifier = Modifier.padding(
+                    start = 5.dp,
+                    end = 5.dp,
+                    top = 5.dp,
+                    bottom = 5.dp
+                )
+            ) {
                 Text(text = getDateTimeText(timeEntry.start))
 
                 timeEntry.stop?.let {
