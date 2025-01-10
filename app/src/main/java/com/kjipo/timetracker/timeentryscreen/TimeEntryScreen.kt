@@ -258,12 +258,9 @@ private fun EditDate(
                 )
             },
             update = { view ->
-//                view.minDate = // contraints
-//                    view.maxDate = // contraints
-
                 view.setOnDateChangeListener { _, year, month, dayOfMonth ->
                     localDateTime = localDateTime.withYear(year)
-                        .withMonth(month)
+                        .withMonth(month + 1)
                         .withDayOfMonth(dayOfMonth)
                 }
             }
