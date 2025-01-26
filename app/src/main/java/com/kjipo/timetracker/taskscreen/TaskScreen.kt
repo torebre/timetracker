@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults.inputChipColors
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -38,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kjipo.timetracker.FloatingAddButton
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
@@ -146,149 +148,161 @@ fun TaskScreen(taskScreenInput: TaskScreenInput) {
 
     val coroutineScope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 10.dp)
-    ) {
-        Row {
-            TextField(
-                value = inputText.value,
-                onValueChange = { inputText.value = it },
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.headlineSmall
-            )
-        }
-
-        Row {
-            usedTags.value.forEachIndexed { index, tagUi ->
-                val modifier = if (index == 0) {
-                    Modifier
-                } else {
-                    Modifier.padding(start = 5.dp)
-                }
-                Tag(tagUi, modifier) {
-                    usedTags.value -= tagUi
-                    availableTags.value += tagUi
-                }
-            }
-        }
-
-        Button(
-            onClick = {
-                expanded.value = !expanded.value
-            },
-            enabled = taskUiState.availableTags.isNotEmpty()
+    Scaffold(floatingActionButton =
+    {
+        FloatingAddButton(contentDescription = "Add time entry", onClickHandler = {
+            editTimeEntry.longValue = 0L
+            showDialog.value = true
+        })
+    }) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-            Text("Add tag")
-        }
-
-        if (expanded.value) {
-            TagSelectionMenu(
-                availableElements = taskUiState.availableTags,
-                addElement = { tagUi ->
-                    usedTags.value += tagUi
-                    expanded.value = false
-                },
-                expanded
-            )
-        }
-
-        Row {
-            selectedProject.value?.let {
-                Tag(it, Modifier) {
-                    selectedProject.value = null
-                }
-            }
-        }
-
-        Button(
-            onClick = {
-                expandedProject.value = !expandedProject.value
-            },
-            enabled = taskUiState.availableProjects.isNotEmpty() && selectedProject.value == null
-        ) {
-            Text("Set project")
-        }
-
-        if (expandedProject.value) {
-            TagSelectionMenu(
-                availableElements = taskUiState.availableProjects,
-                addElement = { projectElement ->
-                    selectedProject.value = projectElement
-                    expandedProject.value = false
-                },
-                expandedProject
-            )
-        }
-
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(items = taskUiState.timeEntries,
-                key = { timeEntry ->
-                    timeEntry.id
-                }) { timeEntry ->
-                TimeEntryRow(
-                    timeEntry,
-                    {
-                        timeEntryEditUiState.value =
-                            timeEntryEditUiState.value.copy(waiting = true)
-                        editTimeEntry.longValue = timeEntry.id
-
-                        coroutineScope.launch(Dispatchers.IO) {
-                            taskScreenInput.getTimeEntry(timeEntry.id)?.let {
-                                timeEntryEditUiState.value =
-                                    timeEntryEditUiState.value.copy(
-                                        waiting = false,
-                                        timeEntry = it
-                                    )
-                            }
-                            showDialog.value = true
-                        }
-                    },
-                    taskScreenInput.deleteTimeEntry
+            Row {
+                TextField(
+                    value = inputText.value,
+                    onValueChange = { inputText.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.headlineSmall
                 )
             }
-        }
-    }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomEnd
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
+            Row {
+                usedTags.value.forEachIndexed { index, tagUi ->
+                    val modifier = if (index == 0) {
+                        Modifier
+                    } else {
+                        Modifier.padding(start = 5.dp)
+                    }
+                    Tag(tagUi, modifier) {
+                        usedTags.value -= tagUi
+                        availableTags.value += tagUi
+                    }
+                }
+            }
+
             Button(
                 onClick = {
-                    taskScreenInput.saveData(inputText.value, usedTags.value, selectedProject.value)
+                    expanded.value = !expanded.value
                 },
-                enabled = inputText.value.isNotBlank()
-                        && (inputText.value != taskUiState.taskUi.taskName
-                        || !usedTags.value.containsAll(
-                    taskUiState.tags
-                ) || !taskUiState.tags.containsAll(usedTags.value)
-                        || selectedProject.value != taskUiState.project)
+                enabled = taskUiState.availableTags.isNotEmpty()
             ) {
-                Text("Save")
+                Text("Add tag")
+            }
+
+            if (expanded.value) {
+                TagSelectionMenu(
+                    availableElements = taskUiState.availableTags,
+                    addElement = { tagUi ->
+                        usedTags.value += tagUi
+                        expanded.value = false
+                    },
+                    expanded
+                )
+            }
+
+            Row {
+                selectedProject.value?.let {
+                    Tag(it, Modifier) {
+                        selectedProject.value = null
+                    }
+                }
+            }
+
+            Button(
+                onClick = {
+                    expandedProject.value = !expandedProject.value
+                },
+                enabled = taskUiState.availableProjects.isNotEmpty() && selectedProject.value == null
+            ) {
+                Text("Set project")
+            }
+
+            if (expandedProject.value) {
+                TagSelectionMenu(
+                    availableElements = taskUiState.availableProjects,
+                    addElement = { projectElement ->
+                        selectedProject.value = projectElement
+                        expandedProject.value = false
+                    },
+                    expandedProject
+                )
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                items(items = taskUiState.timeEntries,
+                    key = { timeEntry ->
+                        timeEntry.id
+                    }) { timeEntry ->
+                    TimeEntryRow(
+                        timeEntry,
+                        {
+                            timeEntryEditUiState.value =
+                                timeEntryEditUiState.value.copy(waiting = true)
+                            editTimeEntry.longValue = timeEntry.id
+
+                            coroutineScope.launch(Dispatchers.IO) {
+                                taskScreenInput.getTimeEntry(timeEntry.id)?.let {
+                                    timeEntryEditUiState.value =
+                                        timeEntryEditUiState.value.copy(
+                                            waiting = false,
+                                            timeEntry = it
+                                        )
+                                }
+                                showDialog.value = true
+                            }
+                        },
+                        taskScreenInput.deleteTimeEntry
+                    )
+                }
             }
         }
-    }
 
-    if (showDialog.value) {
-        TimeEntryDialog(
-            timeEntryEditUiState,
-            setShowDialog = { show ->
-                showDialog.value = show
-            }, addTimeEntry = { start, stop ->
-                if (editTimeEntry.longValue != 0L) {
-                    taskScreenInput.updateTimeEntry(editTimeEntry.value, start, stop)
-                } else {
-                    taskScreenInput.addTimeEntry(start, stop)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Button(
+                    onClick = {
+                        taskScreenInput.saveData(
+                            inputText.value,
+                            usedTags.value,
+                            selectedProject.value
+                        )
+                    },
+                    enabled = inputText.value.isNotBlank()
+                            && (inputText.value != taskUiState.taskUi.taskName
+                            || !usedTags.value.containsAll(
+                        taskUiState.tags
+                    ) || !taskUiState.tags.containsAll(usedTags.value)
+                            || selectedProject.value != taskUiState.project)
+                ) {
+                    Text("Save")
                 }
-            })
-    }
+            }
+        }
 
+        if (showDialog.value) {
+            TimeEntryDialog(
+                timeEntryEditUiState,
+                setShowDialog = { show ->
+                    showDialog.value = show
+                }, addTimeEntry = { start, stop ->
+                    if (editTimeEntry.longValue != 0L) {
+                        taskScreenInput.updateTimeEntry(editTimeEntry.longValue, start, stop)
+                    } else {
+                        taskScreenInput.addTimeEntry(start, stop)
+                    }
+                })
+        }
+
+    }
 
 }
 

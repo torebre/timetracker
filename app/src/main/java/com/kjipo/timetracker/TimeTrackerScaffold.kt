@@ -177,10 +177,9 @@ private fun MainContentScaffold(
                 {
                     appState.navigateToScreen("${Screens.PROJECT.name}/0")
                 },
-                {
-                    appState.navigateToScreen("${Screens.TASK.name}/0/0")
-                }
-
+//                {
+//                    appState.navigateToScreen("${Screens.TIME_ENTRY_EDIT.name}/0")
+//                }
             )
         }
     ) { paddingValues ->
@@ -192,7 +191,7 @@ private fun MainContentScaffold(
             }
         }
 
-        if(showTagSelection) {
+        if (showTagSelection) {
             // TODO
 
         }
@@ -206,7 +205,6 @@ private fun MainContentScaffold(
                     onClick = {
                         taskListModel.setSortOrder(SortOrder.RECENTLY_USED)
                         showSortMenu = false
-
                     })
                 DropdownMenuItem(text = {
                     Text("Default")
@@ -257,7 +255,6 @@ private fun SetupNavHost(
         }
 
         composable(Screens.REPORTS.name) {
-//            val reportsModel = ReportsModel(appContainer.taskRepository)
             ReportScreen(reportsModel)
         }
 
@@ -273,15 +270,6 @@ private fun SetupNavHost(
             })
         ) { navBackStackEntry ->
             GoToTaskScreen(navBackStackEntry, appContainer, appState)
-        }
-
-        composable(
-            "${Screens.TIME_ENTRY_EDIT.name}/{timeEntryId}",
-            arguments = listOf(navArgument("timeEntryId") {
-                type = NavType.LongType
-            })
-        ) { navBackStackEntry ->
-            GoToTimeEntryScreen(navBackStackEntry, appContainer, appState)
         }
 
         composable(
@@ -436,19 +424,21 @@ private fun GoToTimeEntryScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    navBackStackEntry.arguments?.getLong("timeEntryId")?.let { timeEntryId ->
-        val uiState by produceState(initialValue = TimeEntryEditUiState(waiting = true)) {
-            coroutineScope.launch(Dispatchers.IO) {
-                val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
-                value = TimeEntryEditUiState(timeEntry = timeEntry)
-            }
-        }
+    val timeEntryId = navBackStackEntry.arguments?.getLong("timeEntryId")
+    if (timeEntryId != null && timeEntryId != 0L) {
+        val uiState by produceState(initialValue = TimeEntryEditUiState(waiting = true),
+            producer = {
+                coroutineScope.launch(Dispatchers.IO) {
+                    val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
+                    value = TimeEntryEditUiState(timeEntry = timeEntry)
+                }
+            })
 
-        TimeEntryScreen(uiState, { timeEntryId, start, stop ->
+        TimeEntryScreen(uiState, updateOrCreateEntry = { currentTimeEntryId, start, stop ->
             coroutineScope.launch(Dispatchers.IO) {
                 // On this time entry screen the timeEntry should not be null since an existing entry is being edited
-                timeEntryId?.let {
-                    appContainer.taskRepository.updateTimeEntry(timeEntryId, start, stop)
+                currentTimeEntryId?.let {
+                    appContainer.taskRepository.updateTimeEntry(currentTimeEntryId, start, stop)
                         .let { updatedTimeEntry ->
                             if (updatedTimeEntry != null) {
                                 coroutineScope.launch(Dispatchers.Main) {
@@ -459,16 +449,24 @@ private fun GoToTimeEntryScreen(
                 }
             }
         },
-            {
+            cancel = {
                 coroutineScope.launch(Dispatchers.IO) {
-                    appContainer.taskRepository.getTimeEntry(timeEntryId)?.let {
+                    val timeEntry = appContainer.taskRepository.getTimeEntry(timeEntryId)
+
+                    if (timeEntry != null) {
                         coroutineScope.launch(Dispatchers.Main) {
-                            appState.navigateToScreen("${Screens.TASK.name}/${it.taskId}")
+                            appState.navigateToScreen("${Screens.TASK.name}/${timeEntry.taskId}")
+                        }
+                    } else {
+                        coroutineScope.launch(Dispatchers.Main) {
+                            appState.navController.popBackStack()
                         }
                     }
                 }
             })
+
     }
+
 }
 
 
@@ -505,7 +503,7 @@ fun AddTaskButton(
     addTask: () -> Unit,
     addTag: () -> Unit,
     addProject: () -> Unit,
-    addTimeEntry: () -> Unit
+//    addTimeEntry: () -> Unit
 ) {
     when (taskScreenShowing.value) {
         Screens.TASKS -> {
@@ -520,9 +518,9 @@ fun AddTaskButton(
             FloatingAddButton(contentDescription = "Add project", onClickHandler = addProject)
         }
 
-        Screens.TASK -> {
-            FloatingAddButton(contentDescription = "Add time entry", onClickHandler = addTimeEntry)
-        }
+//        Screens.TASK -> {
+//            FloatingAddButton(contentDescription = "Add time entry", onClickHandler = addTimeEntry)
+//        }
 
         else -> {
             // Do not add a floating button

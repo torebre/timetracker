@@ -52,7 +52,7 @@ class TimeTrackerAppState(
     fun navigateToScreen(route: String) {
         if (route != currentRoute) {
             navController.navigate(route) {
-                screenShowing.value = Screens.values().first {
+                screenShowing.value = Screens.entries.first {
                     route.startsWith(it.name)
                 }
 

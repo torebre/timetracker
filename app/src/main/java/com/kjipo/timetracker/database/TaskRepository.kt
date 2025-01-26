@@ -39,6 +39,7 @@ interface TaskRepository {
     suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
 
     suspend fun updateTimeEntry(timeEntry: TimeEntry)
+
     suspend fun saveTask(taskId: Long, taskName: String, tagIds: List<Long>, projectId: Long?)
 
     suspend fun getTags(): List<Tag>
@@ -51,7 +52,9 @@ interface TaskRepository {
     suspend fun deleteTag(tag: Tag)
 
     suspend fun addTag(taskId: Long, tagId: Long)
+
     suspend fun removeTag(taskId: Long, tagId: Long)
+
     suspend fun getTasksForTag(tagId: Long): List<TagWithTaskEntries>
 
     suspend fun deleteTimeEntry(timeEntryId: Long)
@@ -69,6 +72,7 @@ interface TaskRepository {
     suspend fun addProject(taskId: Long, projectId: Long)
 
     suspend fun removeProject(taskId: Long, projectId: Long)
+
     suspend fun updateTimeEntry(timeEntry: Long, start: Instant, stop: Instant?): TimeEntry?
 
 }
