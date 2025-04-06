@@ -119,6 +119,8 @@ fun ReportScreen(
             }
         }
 
+        Text("Start: ${uiState.startAndStopTime.startTime} - ${uiState.startAndStopTime.stopTime}")
+
         if (showDialog.value) {
             DateRangeModal(setShowDialog = { input ->
                 showDialog.value = input

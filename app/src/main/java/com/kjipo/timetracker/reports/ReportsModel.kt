@@ -44,7 +44,10 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         val weekFields: WeekFields = WeekFields.of(Locale.getDefault())
         val weekNumber: Int = selectedWeekStart.get(weekFields.weekOfYear())
 
-        return ReportsUiState(selectedWeekStart = selectedWeekStart, weekNumber = weekNumber)
+        return ReportsUiState(selectedWeekStart = selectedWeekStart,
+            weekNumber = weekNumber,
+            startAndStopTime = getDayRange()
+        )
     }
 
 
@@ -93,6 +96,7 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         viewModelState.update {
             it.copy(
                 selectedTimeRange = timeRange,
+                startAndStopTime = startAndStopTime,
                 projectSummaries = transformTimeEntriesToProjectSummaries(timeEntries),
                 taskSummaries = transformEntriesToTaskSummaries(timeEntries, startAndStopTime)
             )
@@ -335,7 +339,8 @@ data class ReportsUiState(
     val tags: List<Tag> = emptyList(),
     val selectedTags: List<Tag> = emptyList(),
     val selectedWeekStart: LocalDate,
-    val weekNumber: Int
+    val weekNumber: Int,
+    val startAndStopTime: DateRange
 )
 
 data class ProjectSummary(
