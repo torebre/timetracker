@@ -18,11 +18,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.time.*
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 
 class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
 
-    private val viewModelState = MutableStateFlow(ReportsUiState())
+    private val viewModelState = MutableStateFlow(getInitialState())
+
 
     val uiState = viewModelState.stateIn(
         viewModelScope,
@@ -30,31 +33,42 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         viewModelState.value
     )
 
+
     init {
         setSelectedTimeRange(SelectedTimeRange.DAY)
         loadTags()
     }
 
+    private fun getInitialState(): ReportsUiState {
+        val selectedWeekStart = LocalDate.now().with(DayOfWeek.MONDAY)
+        val weekFields: WeekFields = WeekFields.of(Locale.getDefault())
+        val weekNumber: Int = selectedWeekStart.get(weekFields.weekOfYear())
+
+        return ReportsUiState(selectedWeekStart = selectedWeekStart, weekNumber = weekNumber)
+    }
+
 
     fun setSelectedTimeRange(timeRange: SelectedTimeRange) {
         viewModelScope.launch(Dispatchers.IO) {
-            val startAndStopTime = when (timeRange) {
-                SelectedTimeRange.DAY -> {
-                    getDayRange()
-                }
+            updateTimeSummaries(timeRange)
+        }
+    }
 
-                SelectedTimeRange.WEEK -> {
-                    getWeekRange()
-                }
-
-                SelectedTimeRange.CUSTOM -> {
-                    viewModelState.value.customRange
-                }
+    private fun computeTimeRange(timeRange: SelectedTimeRange): DateRange {
+        val startAndStopTime = when (timeRange) {
+            SelectedTimeRange.DAY -> {
+                getDayRange()
             }
 
-            updateTimeSummaries(startAndStopTime, timeRange)
-        }
+            SelectedTimeRange.WEEK -> {
+                getWeekRange(viewModelState.value.selectedWeekStart)
+            }
 
+            SelectedTimeRange.CUSTOM -> {
+                viewModelState.value.customRange
+            }
+        }
+        return startAndStopTime
     }
 
     private fun loadTags() {
@@ -64,23 +78,17 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     private suspend fun updateTimeSummaries() {
-        updateTimeSummaries(
-            viewModelState.value.customRange,
-            viewModelState.value.selectedTimeRange
-        )
+        updateTimeSummaries(viewModelState.value.selectedTimeRange)
     }
 
-    private suspend fun updateTimeSummaries(
-        startAndStopTime: DateRange,
-        timeRange: SelectedTimeRange
-    ) {
+    private suspend fun updateTimeSummaries(timeRange: SelectedTimeRange) {
+        val startAndStopTime = computeTimeRange(timeRange)
+
         // TODO Need to get individual time entries and add them together, the task can have entries that should not be part of the summary
         val timeEntries = taskRepository.getTasksWithTimeEntries(
             startAndStopTime.startTime,
             startAndStopTime.stopTime
         )
-
-        Timber.tag("Report").d("Number of time entries: ${timeEntries.size}")
 
         viewModelState.update {
             it.copy(
@@ -132,7 +140,8 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
                 taskWithTimeEntry.task.title,
                 Duration.ofSeconds(totalTimeForUsedForTaskInDateRange),
                 taskWithTimeEntry.project,
-                taskWithTimeEntry.tags)
+                taskWithTimeEntry.tags
+            )
         }.toList()
     }
 
@@ -263,10 +272,28 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+    fun changeSelectedWeek(weekChange: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val updatedWeekStart =
+                viewModelState.value.selectedWeekStart.plusWeeks(weekChange.toLong())
+            val weekFields: WeekFields = WeekFields.of(Locale.getDefault())
+            val weekNumber = updatedWeekStart.get(weekFields.weekOfYear())
+
+            viewModelState.update {
+                viewModelState.value.copy(
+                    selectedWeekStart = updatedWeekStart,
+                    weekNumber = weekNumber
+                )
+            }
+            updateTimeSummaries()
+        }
+    }
+
 
     companion object {
 
         const val noProjectId = -1L
+
 
         fun provideFactory(taskRepository: TaskRepository): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
@@ -282,13 +309,12 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
             return DateRange(today.atStartOfDay(), today.atTime(23, 59, 59))
         }
 
-        fun getWeekRange(): DateRange {
-            val today = LocalDate.now()
-            val startOfWeek =
-                LocalDate.now().minusDays(today.dayOfWeek.value - 1L)
-            val endOfWeek = today.plusDays(DayOfWeek.SUNDAY.value - today.dayOfWeek.value.toLong())
-
-            return DateRange(startOfWeek.atStartOfDay(), endOfWeek.atTime(23, 59, 59))
+        fun getWeekRange(startOfWeek: LocalDate): DateRange {
+            return DateRange(
+                startOfWeek.atStartOfDay(),
+                startOfWeek.plusDays(6)
+                    .atTime(23, 59, 59)
+            )
         }
 
     }
@@ -307,7 +333,9 @@ data class ReportsUiState(
     val customRange: DateRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now()),
     val taskSummaries: List<TaskSummary> = emptyList(),
     val tags: List<Tag> = emptyList(),
-    val selectedTags: List<Tag> = emptyList()
+    val selectedTags: List<Tag> = emptyList(),
+    val selectedWeekStart: LocalDate,
+    val weekNumber: Int
 )
 
 data class ProjectSummary(

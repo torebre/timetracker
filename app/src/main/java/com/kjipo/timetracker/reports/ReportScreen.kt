@@ -43,27 +43,35 @@ import java.time.ZoneId
 fun ReportScreen(reportsModel: ReportsModel) {
     val uiState = reportsModel.uiState.collectAsState()
 
-    ReportScreen(uiState, { selectedTimeRange ->
+    ReportScreen(
+        uiState, { selectedTimeRange ->
         reportsModel.setSelectedTimeRange(selectedTimeRange)
     }, { start, stop ->
         reportsModel.setCustomDateRange(start, stop)
-    })
+    },
+        { weekChange: Int ->
+            reportsModel.changeSelectedWeek(weekChange)
+
+        })
 }
 
 @Composable
 fun ReportScreen(
     uiState: State<ReportsUiState>,
     onTabSelected: (SelectedTimeRange) -> Unit,
-    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit
+    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit,
+    selectedWeekChanged: (weekChange: Int) -> Unit
 ) {
     val uiStateValue = uiState.value
-    ReportScreen(uiStateValue, onTabSelected, customDateRangeChanged)
+    ReportScreen(uiStateValue, onTabSelected, customDateRangeChanged, selectedWeekChanged)
 }
 
 @Composable
 fun ReportScreen(
-    uiState: ReportsUiState, onTabSelected: (SelectedTimeRange) -> Unit,
-    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit
+    uiState: ReportsUiState,
+    onTabSelected: (SelectedTimeRange) -> Unit,
+    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit,
+    selectedWeekChanged: (weekChange: Int) -> Unit
 ) {
     val selectedTab = remember { mutableStateOf(SelectedTimeRange.DAY) }
     val showDialog = remember { mutableStateOf(false) }
@@ -74,7 +82,8 @@ fun ReportScreen(
             modifier = Modifier.height(50.dp)
         ) {
             SelectedTimeRange.entries.forEachIndexed { index, timeRange ->
-                Tab(selected = index == selectedTab.value.ordinal,
+                Tab(
+                    selected = index == selectedTab.value.ordinal,
                     onClick = {
                         onTabSelected(timeRange)
                         selectedTab.value = timeRange
@@ -91,6 +100,23 @@ fun ReportScreen(
                 Text("Select range")
             }
 
+        } else if (selectedTab.value == SelectedTimeRange.WEEK) {
+            Row {
+                Button(onClick = {
+                    selectedWeekChanged(-1)
+                }) {
+                    Text("<")
+                }
+                Text(
+                    modifier = Modifier.padding(start = 5.dp, end = 5.dp),
+                    text = "${uiState.weekNumber}"
+                )
+                Button(onClick = {
+                    selectedWeekChanged(1)
+                }) {
+                    Text(">")
+                }
+            }
         }
 
         if (showDialog.value) {
@@ -217,19 +243,22 @@ fun TaskSummaryList(uiState: ReportsUiState) {
 
 @Composable
 fun TaskSummaryRow(taskSummary: TaskSummary) {
-    TaskSummaryRow(taskSummary.title,
+    TaskSummaryRow(
+        taskSummary.title,
         taskSummary.duration,
         taskSummary.project,
-        taskSummary.tags)
+        taskSummary.tags
+    )
 }
 
 
-
 @Composable
-fun TaskSummaryRow(title: String,
-                   duration: Duration,
-                   project: Project?,
-                   tags: List<Tag>) {
+fun TaskSummaryRow(
+    title: String,
+    duration: Duration,
+    project: Project?,
+    tags: List<Tag>
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(
             modifier = Modifier.weight(0.8f),
