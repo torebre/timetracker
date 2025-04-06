@@ -329,13 +329,6 @@ data class DateRange(
     val stopTime: LocalDateTime
 )
 
-data class CalendarUiState(
-    val year: Year = Year.now(),
-    val month: Month = LocalDate.now().month,
-    val startTime: LocalDateTime? = null,
-    val stopTime: LocalDateTime? = null
-)
-
 
 enum class SelectedTimeRange {
     DAY,
