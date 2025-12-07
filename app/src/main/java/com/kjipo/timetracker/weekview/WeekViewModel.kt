@@ -9,19 +9,52 @@ import com.kjipo.timetracker.database.TaskWithTimeEntries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.temporal.TemporalAdjusters
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 
 class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
 
-    private val viewModelState = MutableStateFlow(WeekViewState(emptyList()))
+    private var selectedDate = Instant.now().atZone(ZoneId.systemDefault())
 
-    val uiState = viewModelState.stateIn(
+    private val viewModelState = let {
+        val weekData = getWeekData(selectedDate)
+
+        MutableStateFlow(
+            WeekViewState(
+                weekData.dateToday,
+                weekData.weekNumber,
+                weekData.start,
+                weekData.end,
+                emptyList()
+            )
+        )
+    }
+
+    private fun getWeekData(date: ZonedDateTime): WeekData {
+        val weekFields = WeekFields.of(Locale.getDefault())
+
+        return WeekData(
+            date.toLocalDate(),
+            date.get(weekFields.weekOfWeekBasedYear()),
+            date.with(TemporalAdjusters.previousOrSame(weekFields.firstDayOfWeek)).toLocalDate(),
+            date.with(TemporalAdjusters.nextOrSame(DayOfWeek.entries[(weekFields.firstDayOfWeek.ordinal + 6) % DayOfWeek.values().size]))
+                .toLocalDate()
+        )
+    }
+
+    val uiState: StateFlow<WeekViewState> = viewModelState.stateIn(
         viewModelScope,
         SharingStarted.Eagerly,
         viewModelState.value
@@ -29,14 +62,26 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            viewModelState.update {
-                it.copy(daySummaries = generateTaskList())
-            }
+            updateWeekData(selectedDate)
         }
     }
 
-    private suspend fun generateTaskList(): List<DaySummary> {
-        return generateDaysFromStartOfWeekUntilToday()
+    private suspend fun updateWeekData(dateToUse: ZonedDateTime) {
+        viewModelState.update {
+            val weekData = getWeekData(dateToUse)
+
+            it.copy(
+                weekData.dateToday,
+                weekData.weekNumber,
+                weekData.start,
+                weekData.end,
+                daySummaries = generateTaskList(weekData.dateToday)
+            )
+        }
+    }
+
+    private suspend fun generateTaskList(dateToday: LocalDate): List<DaySummary> {
+        return generateDaysFromStartOfWeekUntilToday(dateToday)
             .map { localDate ->
                 val daySummary = generateDaySummary(
                     localDate,
@@ -138,6 +183,23 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+    fun selectedWeekChanged(weekDiff: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            viewModelState.update {
+                selectedDate = selectedDate.plusWeeks(weekDiff)
+                getWeekData(selectedDate).let { weekData ->
+                    it.copy(
+                        weekData.dateToday,
+                        weekData.weekNumber,
+                        weekData.start,
+                        weekData.end,
+                        generateTaskList(weekData.dateToday)
+                    )
+                }
+            }
+        }
+    }
+
     companion object {
 
         internal fun generateDaysFromStartOfWeekUntilToday(day: LocalDate = LocalDate.now()): List<LocalDate> {
@@ -149,6 +211,13 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
 
 }
 
+
+private class WeekData(
+    val dateToday: LocalDate,
+    val weekNumber: Int,
+    val start: LocalDate,
+    val end: LocalDate
+)
 
 data class DayTaskSummary(
     val title: String,
@@ -163,4 +232,10 @@ data class DaySummary(
     val tasks: List<DayTaskSummary>
 )
 
-data class WeekViewState(val daySummaries: List<DaySummary>)
+data class WeekViewState(
+    val dateToday: LocalDate,
+    val weekNumber: Int,
+    val start: LocalDate,
+    val end: LocalDate,
+    val daySummaries: List<DaySummary>
+)
