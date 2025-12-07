@@ -1,17 +1,28 @@
 package com.kjipo.timetracker
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.compose.NavHost
@@ -23,6 +34,7 @@ import com.kjipo.timetracker.taskmarkelementlistscreen.TaskMarkerModel
 import com.kjipo.timetracker.taskmarkelementlistscreen.TagListScreen
 import com.kjipo.timetracker.tagscreen.TaskMarkElementScreen
 import com.kjipo.timetracker.tagscreen.TagScreenModel
+import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.tasklist.SortOrder
 import com.kjipo.timetracker.tasklist.TaskList
 import com.kjipo.timetracker.tasklist.TaskListModel
@@ -56,7 +68,6 @@ fun TimeTrackerScaffold(
     {
         MainContentScaffold(appState, appContainer)
     }
-
 }
 
 @Composable
@@ -186,9 +197,17 @@ private fun MainContentScaffold(
         SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel)
 
         if (showFilterModal) {
-            FilterModal { show ->
-                showFilterModal = show
-            }
+            val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
+            FilterModal(
+                availableFilters = uiState.value.availableFilters,
+                initialSelectedFilters = uiState.value.selectedFilters,
+                onApply = { filters ->
+                    taskListModel.updateFilter(filters)
+                },
+                setShowDialog = { show ->
+                    showFilterModal = show
+                }
+            )
         }
 
         if (showTagSelection) {
@@ -549,15 +568,91 @@ fun FloatingAddButton(contentDescription: String, onClickHandler: () -> Unit) {
 
 @Composable
 fun FilterModal(
+    availableFilters: List<TaskMarkUiElement>,
+    initialSelectedFilters: List<TaskMarkUiElement>,
+    onApply: (List<TaskMarkUiElement>) -> Unit,
     setShowDialog: (Boolean) -> Unit,
 ) {
+    var selectedFilters by remember { mutableStateOf(initialSelectedFilters) }
+
     Dialog(onDismissRequest = { setShowDialog(false) }) {
-        Button({
-            setShowDialog(false)
-        }) {
-            Text("Close")
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Filter by Tags/Projects",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .heightIn(max = 300.dp)
+                ) {
+                    items(availableFilters.size) { filter ->
+                        val currentFilter = availableFilters[filter]
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedFilters = if (selectedFilters.contains(currentFilter)) {
+                                        selectedFilters - currentFilter
+                                    } else {
+                                        selectedFilters + currentFilter
+                                    }
+                                }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Checkbox(
+                                checked = selectedFilters.contains(currentFilter),
+                                onCheckedChange = { checked ->
+                                    selectedFilters = if (checked) {
+                                        selectedFilters + currentFilter
+                                    } else {
+                                        selectedFilters - currentFilter
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(currentFilter.title)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { selectedFilters = emptyList() }) {
+                        Text("Clear All")
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(onClick = { setShowDialog(false) }) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        onApply(selectedFilters)
+                        setShowDialog(false)
+                    }) {
+                        Text("Apply")
+                    }
+                }
+            }
         }
     }
+
 }
 
 @Composable

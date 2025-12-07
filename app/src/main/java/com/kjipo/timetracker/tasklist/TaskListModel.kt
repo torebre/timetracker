@@ -74,6 +74,12 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+    fun updateFilter(selectedFilters: List<TaskMarkUiElement>) {
+        viewModelState.update {
+            it.copy(selectedFilters = selectedFilters)
+        }
+    }
+
     fun setSortOrder(sortOrder: SortOrder) {
         this.sortOrder = sortOrder
         viewModelScope.launch(Dispatchers.IO) {
@@ -93,14 +99,32 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     private suspend fun reloadTasks() {
-        val tasks = getSortFunction(taskRepository.getTasksWithTimeEntries()
-            .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
+        val tasks = getSortFunction(
+            taskRepository.getTasksWithTimeEntries()
+                .map { taskWithTimeEntries -> transformTaskToUiTask(taskWithTimeEntries) })
         val activeTasks = tasks.filter { it.isOngoing() }.map { it.id }
+
+        // Extract all available tags and projects from the full task list
+        val availableFilters = tasks.flatMap {
+            it.tags + listOfNotNull(it.project)
+        }.distinct()
+
+        // Filter tasks based on selected filters
+        val filteredTasks = if (viewModelState.value.selectedFilters.isEmpty()) {
+            tasks
+        } else {
+            tasks.filter { task ->
+                val taskMarks = task.tags + listOfNotNull(task.project)
+                // Check if the task has any of the selected tags/projects
+                taskMarks.any { mark -> viewModelState.value.selectedFilters.contains(mark) }
+            }
+        }
 
         viewModelState.update {
             viewModelState.value.copy(
                 activeTasks = activeTasks,
-                tasks = tasks
+                availableFilters = availableFilters,
+                tasks = filteredTasks
             )
         }
     }
