@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import java.time.Instant.now
 
 
@@ -38,6 +39,10 @@ interface TaskDao {
 
     @Query("SELECT * FROM task WHERE task.taskId = :taskId")
     fun getTask(taskId: Long): Task?
+
+    @Transaction
+    @Query("SELECT * FROM task")
+    fun getAllTasksWithTimeEntriesFlow(): Flow<List<TaskWithTimeEntries>>
 
     @Insert
     fun insertTaskAndTagCrossRef(tagTasksCrossRef: TagTasksCrossRef): Long

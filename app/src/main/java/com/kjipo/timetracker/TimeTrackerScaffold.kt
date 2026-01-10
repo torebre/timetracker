@@ -43,6 +43,8 @@ import com.kjipo.timetracker.taskscreen.TaskScreenModel
 import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
 import com.kjipo.timetracker.weekview.WeekViewModel
+import com.kjipo.timetracker.day.DayModel
+import com.kjipo.timetracker.day.DayScreen
 import com.kjipo.timetracker.weekview.WeekViewScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -142,6 +144,10 @@ private fun MainContentScaffold(
         factory = ReportsModel.provideFactory(appContainer.taskRepository)
     )
 
+    val dayModel: DayModel = viewModel(
+        factory = DayModel.provideFactory(appContainer.taskRepository)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Top bar") },
@@ -194,7 +200,7 @@ private fun MainContentScaffold(
             )
         }
     ) { paddingValues ->
-        SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel)
+        SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel, dayModel)
 
         if (showFilterModal) {
             val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
@@ -262,7 +268,8 @@ private fun SetupNavHost(
     paddingValues: PaddingValues,
     appContainer: AppContainer,
     taskListModel: TaskListModel,
-    reportsModel: ReportsModel
+    reportsModel: ReportsModel,
+    dayModel: DayModel
 ) {
     NavHost(
         navController = appState.navController,
@@ -275,6 +282,10 @@ private fun SetupNavHost(
 
         composable(Screens.REPORTS.name) {
             ReportScreen(reportsModel)
+        }
+
+        composable(Screens.DAY.name) {
+            DayScreen(dayModel)
         }
 
         composable(Screens.WEEKVIEW.name) {
@@ -507,6 +518,12 @@ fun TimeTrackerBottomBar(
         }
 
         Button(modifier = Modifier.padding(start = 5.dp), onClick = {
+            navigateToRoute(Screens.DAY.name)
+        }) {
+            Text("Day")
+        }
+
+        Button(modifier = Modifier.padding(start = 5.dp), onClick = {
             navigateToRoute(Screens.WEEKVIEW.name)
         }) {
             Text("Week")
@@ -516,6 +533,7 @@ fun TimeTrackerBottomBar(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskButton(
     taskScreenShowing: MutableState<Screens?>,

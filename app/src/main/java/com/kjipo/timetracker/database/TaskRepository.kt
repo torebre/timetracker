@@ -2,6 +2,7 @@ package com.kjipo.timetracker.database
 
 import androidx.room.Transaction
 import com.kjipo.timetracker.tasklist.SortOrder
+import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 import java.time.Instant
 import java.time.Instant.now
@@ -32,6 +33,8 @@ interface TaskRepository {
         sortOrder: SortOrder = SortOrder.DEFAULT
     ): List<TaskWithTimeEntries>
 
+    fun getAllTasksWithTimeEntriesFlow(): Flow<List<TaskWithTimeEntries>>
+
     suspend fun addTimeEntry(timeEntry: TimeEntry)
 
     suspend fun setStopForTimeEntry(timeEntryId: Long, stop: Instant)
@@ -47,6 +50,7 @@ interface TaskRepository {
     suspend fun getTag(id: Long): Tag?
 
     suspend fun insertTag(tag: Tag): Long
+    
     suspend fun updateTag(tag: Tag)
 
     suspend fun deleteTag(tag: Tag)
@@ -116,6 +120,15 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         stopTime: LocalDateTime?,
         sortOrder: SortOrder
     ): List<TaskWithTimeEntries> {
+//        return appDatabase.taskDao().getTasksWithTimeEntries(
+//            when (sortOrder) {
+//                SortOrder.DEFAULT -> "title ASC"
+//                SortOrder.RECENTLY_USED -> "lastUpdated DESC"
+//            }
+//        ).filter {
+//            shouldTimeEntryBeIncluded(it, startTime, stopTime)
+//        }
+
         val sortColumn = when (sortOrder) {
             SortOrder.DEFAULT -> "id"
             SortOrder.RECENTLY_USED -> "lastUpdated"
@@ -129,6 +142,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
         return taskWithTimeEntries.filter {
             shouldTimeEntryBeIncluded(it, startTime, stopTime)
         }
+    }
+
+    override fun getAllTasksWithTimeEntriesFlow(): Flow<List<TaskWithTimeEntries>> {
+        return appDatabase.taskDao().getAllTasksWithTimeEntriesFlow()
     }
 
 
