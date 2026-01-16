@@ -117,10 +117,6 @@ fun TaskList(
 
 @Composable
 fun TaskList(taskListInputParameters: TaskListInputParameters) {
-//    val activeTasks = remember {
-//        taskListInputParameters.taskListUiState.activeTasks
-//    }
-
     val activeTasks = taskListInputParameters.taskListUiState.activeTasks
 
     Column(modifier = Modifier.fillMaxWidth()) {

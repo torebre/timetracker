@@ -42,12 +42,14 @@ import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.FloatingAddButton
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.dateFormatter
+import com.kjipo.timetracker.formatDuration
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.timeFormatter
 import com.kjipo.timetracker.timeentryscreen.TimeEntryDialog
 import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
@@ -314,65 +316,87 @@ private fun getDateTimeText(instant: Instant): String {
     return "$date $time"
 }
 
+private fun getDurationTimeText(duration: Duration?): String {
+    if (duration == null) {
+        return ""
+    }
+    return formatDuration(duration)
+}
+
 @Composable
 fun TimeEntryRow(
     timeEntry: TimeEntryUi,
     navigateToTimeEditScreen: (Long) -> Unit,
     deleteTimeEntry: (Long) -> Unit
 ) {
-
-
     Surface(
         modifier = Modifier.padding(bottom = 5.dp, start = 5.dp, end = 5.dp),
         color = MaterialTheme.colorScheme.tertiaryContainer,
         shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(bottom = 10.dp)
         ) {
-
-            Column(
-                modifier = Modifier.padding(
-                    start = 5.dp,
-                    end = 5.dp,
-                    top = 5.dp,
-                    bottom = 5.dp
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = 5.dp,
+                        end = 5.dp,
+                        top = 5.dp,
+                        bottom = 5.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = getDateTimeText(timeEntry.start))
+                Column(
+                    modifier = Modifier.padding(
+                        start = 5.dp,
+                        end = 5.dp,
+                        top = 5.dp,
+                        bottom = 5.dp
+                    )
+                ) {
+                    Text(text = getDateTimeText(timeEntry.start))
 
-                timeEntry.stop?.let {
-                    Text(getDateTimeText(it))
+                    timeEntry.stop?.let {
+                        Text(getDateTimeText(it))
+                    }
                 }
+                Spacer(Modifier.weight(1f))
+
+                Text(text = getDurationTimeText(timeEntry.duration))
             }
 
-            Spacer(Modifier.weight(1f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 5.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(modifier = Modifier.padding(end = 5.dp),
+                    onClick = {
+                        navigateToTimeEditScreen(timeEntry.id)
+                    }) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit time entry"
+                    )
+                }
 
-            IconButton(modifier = Modifier.padding(end = 5.dp),
-                onClick = {
-                    navigateToTimeEditScreen(timeEntry.id)
-                }) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit time entry"
-                )
-            }
-
-            IconButton(modifier = Modifier.padding(end = 5.dp),
-                onClick = {
-                    deleteTimeEntry(timeEntry.id)
-                }) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete time entry"
-                )
+                IconButton(modifier = Modifier.padding(end = 5.dp),
+                    onClick = {
+                        deleteTimeEntry(timeEntry.id)
+                    }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete time entry"
+                    )
+                }
             }
         }
     }
-
 }
 
 

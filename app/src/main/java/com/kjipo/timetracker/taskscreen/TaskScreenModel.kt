@@ -8,10 +8,15 @@ import com.kjipo.timetracker.database.TaskWithTimeEntries
 import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.Duration
 import java.time.Instant
+import kotlin.time.toKotlinDuration
 
 
 class TaskScreenModel(
@@ -178,10 +183,21 @@ data class TaskUi(
 data class TimeEntryUi(
     val id: Long,
     var start: Instant,
-    var stop: Instant? = null
+    var stop: Instant? = null,
+    var duration: Duration? = null
 ) {
+    constructor(timeEntry: TimeEntry) : this(
+        timeEntry.timeEntryId,
+        timeEntry.start,
+        timeEntry.stop,
+        computeDuration(timeEntry.start, timeEntry.stop)
+    )
 
-    constructor(timeEntry: TimeEntry) : this(timeEntry.timeEntryId, timeEntry.start, timeEntry.stop)
+    companion object {
+        private fun computeDuration(start: Instant, stop: Instant?): Duration {
+            return Duration.between(start, stop ?: Instant.now())
+        }
+    }
 
 }
 
