@@ -18,6 +18,7 @@ import kotlin.random.Random
 
 
 val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("E d. M")
+val weekDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d. M")
 val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("kk:mm:ss")
 val exportDateFormat: DateTimeFormatter = DateTimeFormatter.ISO_DATE
 

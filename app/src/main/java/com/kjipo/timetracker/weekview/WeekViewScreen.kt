@@ -1,10 +1,13 @@
 package com.kjipo.timetracker.weekview
 
+import android.widget.Space
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.kjipo.timetracker.dateFormatter
 import com.kjipo.timetracker.formatDuration
 import com.kjipo.timetracker.reports.TaskSummaryRow
+import com.kjipo.timetracker.weekDateFormatter
 
 
 @Composable
@@ -36,6 +40,22 @@ fun WeekViewScreen(uiState: State<WeekViewState>, selectedWeekChanged: (Long) ->
     val state = rememberLazyListState()
 
     Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                modifier = Modifier.padding(start = 5.dp, end = 5.dp),
+                text = "${weekDateFormatter.format(uiState.value.start)} - ${uiState.value.weekNumber} - ${
+                    weekDateFormatter.format(
+                        uiState.value.end
+                    )
+                }",
+                style = MaterialTheme.typography.headlineMedium,
+            )
+        }
+
         Row(modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically) {
@@ -44,11 +64,7 @@ fun WeekViewScreen(uiState: State<WeekViewState>, selectedWeekChanged: (Long) ->
             }) {
                 Text("<")
             }
-            Text(
-                modifier = Modifier.padding(start = 5.dp, end = 5.dp),
-                text = "${uiState.value.weekNumber}",
-                style = MaterialTheme.typography.headlineMedium,
-            )
+            Spacer(modifier = Modifier.width(10.dp))
             Button(onClick = {
                 selectedWeekChanged(1)
             }) {
@@ -80,7 +96,7 @@ fun WeekViewScreen(uiState: State<WeekViewState>, selectedWeekChanged: (Long) ->
 private fun DaySummary(daySummary: DaySummary) {
     Column {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(3.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
@@ -90,7 +106,7 @@ private fun DaySummary(daySummary: DaySummary) {
 
             Text(
                 style = MaterialTheme.typography.headlineMedium,
-                text = "(${formatDuration(daySummary.timeLogged)})"
+                text = formatDuration(daySummary.timeLogged)
             )
         }
 
