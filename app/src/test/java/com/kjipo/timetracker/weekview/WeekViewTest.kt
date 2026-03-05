@@ -26,4 +26,14 @@ class WeekViewTest {
     }
 
 
+    @Test
+    fun `Test that all days are generated when requested`() {
+        val testDate = LocalDate.of(2023, 12, 14)
+        val days = WeekViewModel.generateDaysForFullWeek(testDate)
+        assertEquals(7, days.size)
+        assertEquals(LocalDate.of(2023, 12, 11), days[0]) // Monday
+        assertEquals(LocalDate.of(2023, 12, 17), days[6]) // Sunday
+    }
+
+
 }

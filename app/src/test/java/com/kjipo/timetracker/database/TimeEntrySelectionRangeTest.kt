@@ -31,7 +31,7 @@ class TimeEntrySelectionRangeTest {
         val timeEntryDay =
             TimeEntryDay(0, 1, LocalDate.now(), Duration.ofMinutes(10))
 
-        val weekRange = ReportsModel.getWeekRange()
+        val weekRange = ReportsModel.getWeekRange(LocalDate.now())
         val shouldTimeEntryBeIncluded = TaskRepositoryImpl.shouldTimeEntryDayBeIncluded(
             timeEntryDay,
             weekRange.startTime,
@@ -78,7 +78,7 @@ class TimeEntrySelectionRangeTest {
                 stopTime.toInstant(ZoneId.systemDefault().rules.getOffset(stopTime))
             )
 
-        val weekRange = ReportsModel.getWeekRange()
+        val weekRange = ReportsModel.getWeekRange(LocalDate.now())
         val shouldTimeEntryBeIncluded = TaskRepositoryImpl.shouldTimeEntryBeIncluded(
             timeEntry,
             weekRange.startTime,

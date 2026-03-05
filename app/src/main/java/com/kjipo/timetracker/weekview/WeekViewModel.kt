@@ -48,8 +48,8 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
         return WeekData(
             date.toLocalDate(),
             date.get(weekFields.weekOfWeekBasedYear()),
-            date.with(TemporalAdjusters.previousOrSame(weekFields.firstDayOfWeek)).toLocalDate(),
-            date.with(TemporalAdjusters.nextOrSame(DayOfWeek.entries[(weekFields.firstDayOfWeek.ordinal + 6) % DayOfWeek.values().size]))
+            date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toLocalDate(),
+            date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
                 .toLocalDate()
         )
     }
@@ -81,7 +81,17 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     private suspend fun generateTaskList(dateToday: LocalDate): List<DaySummary> {
-        return generateDaysFromStartOfWeekUntilToday(dateToday)
+        val weekFields = WeekFields.of(Locale.getDefault())
+        val currentWeek = LocalDate.now().get(weekFields.weekOfWeekBasedYear())
+        val selectedWeek = dateToday.get(weekFields.weekOfWeekBasedYear())
+
+        val daysToGenerate = if (selectedWeek == currentWeek && dateToday.year == LocalDate.now().year) {
+            generateDaysFromStartOfWeekUntilToday(dateToday)
+        } else {
+            generateDaysForFullWeek(dateToday)
+        }
+
+        return daysToGenerate
             .map { localDate ->
                 val daySummary = generateDaySummary(
                     localDate,
@@ -206,6 +216,13 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
             return (0 until day.dayOfWeek.value).map {
                 day.minusDays(it.toLong())
             }.reversed()
+        }
+
+        internal fun generateDaysForFullWeek(day: LocalDate): List<LocalDate> {
+            val firstDayOfWeek = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            return (0 until 7).map {
+                firstDayOfWeek.plusDays(it.toLong())
+            }
         }
     }
 
