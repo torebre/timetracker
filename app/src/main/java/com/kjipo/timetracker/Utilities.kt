@@ -19,6 +19,7 @@ import kotlin.random.Random
 
 val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("E d. M")
 val weekDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d. M")
+val reportDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
 val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("kk:mm:ss")
 val exportDateFormat: DateTimeFormatter = DateTimeFormatter.ISO_DATE
 
@@ -37,25 +38,25 @@ fun toTwoDigits(value: Long): String {
 }
 
 
-fun addTestData(appDatabase: AppDatabase) {
+suspend fun addTestData(appDatabase: AppDatabase) {
     val project =
-        Project(0, "Project 1", Color.valueOf(Color.GREEN)).also { addProject(it, appDatabase) }
+        Project(0, "Project 1", Color.valueOf(Color.GREEN)).let { addProject(it, appDatabase); it }
     val project2 =
-        Project(0, "Project 2", Color.valueOf(Color.YELLOW)).also { addProject(it, appDatabase) }
+        Project(0, "Project 2", Color.valueOf(Color.YELLOW)).let { addProject(it, appDatabase); it }
     val project3 =
-        Project(0, "Project 3", Color.valueOf(Color.RED)).also { addProject(it, appDatabase) }
+        Project(0, "Project 3", Color.valueOf(Color.RED)).let { addProject(it, appDatabase); it }
 
     val tag =
-        Tag(0, "Tag 1", Color.valueOf(Color.RED)).also { addTag(it, appDatabase) }
+        Tag(0, "Tag 1", Color.valueOf(Color.RED)).let { addTag(it, appDatabase); it }
     val tag2 =
-        Tag(0, "Tag 2", Color.valueOf(Color.GREEN)).also { addTag(it, appDatabase) }
+        Tag(0, "Tag 2", Color.valueOf(Color.GREEN)).let { addTag(it, appDatabase); it }
     val tag3 =
-        Tag(0, "Tag 3", Color.valueOf(Color.BLUE)).also { addTag(it, appDatabase) }
+        Tag(0, "Tag 3", Color.valueOf(Color.BLUE)).let { addTag(it, appDatabase); it }
 
-    val task = Task(0, "Task 1").also { addTask(it, appDatabase) }
+    val task = Task(0, "Task 1").let { addTask(it, appDatabase); it }
         .also { setProjectForTask(project, it, appDatabase) }
-    val task2 = Task(0, "Task 2").also { addTask(it, appDatabase) }
-    val task3 = Task(0, "Task 3").also { addTask(it, appDatabase) }
+    val task2 = Task(0, "Task 2").let { addTask(it, appDatabase); it }
+    val task3 = Task(0, "Task 3").let { addTask(it, appDatabase); it }
         .also { setProjectForTask(project2, it, appDatabase) }
 
     val timeEntry = TimeEntry(
@@ -65,45 +66,51 @@ fun addTestData(appDatabase: AppDatabase) {
         LocalDateTime.of(2023, 1, 6, 12, 0, 5).toInstant(
             ZoneOffset.UTC
         )
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
     val timeEntry2 = TimeEntry(
         0, task.taskId, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
             ZoneOffset.UTC
         )
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
     val timeEntry3 = TimeEntry(
         0, task2.taskId, LocalDateTime.of(2023, 1, 5, 12, 0, 5).toInstant(
             ZoneOffset.UTC
         )
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
 
     val timeEntry4 = TimeEntry(
         0, task.taskId, LocalDateTime.now().minusHours(2).toInstant(ZoneOffset.UTC),
         LocalDateTime.now().toInstant(ZoneOffset.UTC)
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
 
     val startTimeEntry5 = LocalDate.now().minusDays(2).atTime(14, 0).toInstant(ZoneOffset.UTC)
     val timeEntry5 = TimeEntry(
         0, task2.taskId, startTimeEntry5,
         startTimeEntry5.plusSeconds(3600)
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
 
     val startTimeEntry6 = LocalDate.now().minusDays(4).atTime(15, 0).toInstant(ZoneOffset.UTC)
     val timeEntry6 = TimeEntry(
         0, task3.taskId, startTimeEntry6,
         startTimeEntry6.plusSeconds(7200)
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
 
     // The same date as the one above, but with a different task
@@ -111,29 +118,34 @@ fun addTestData(appDatabase: AppDatabase) {
     val timeEntry7 = TimeEntry(
         0, task2.taskId, startTimeEntry7,
         startTimeEntry7.plusSeconds(7200)
-    ).also {
+    ).let {
         addTimeEntry(it, appDatabase)
+        it
     }
 
     val timeEntryDay =
-        TimeEntryDay(0, task.taskId, LocalDate.of(2023, 2, 5), Duration.ofMinutes(10)).also {
+        TimeEntryDay(0, task.taskId, LocalDate.of(2023, 2, 5), Duration.ofMinutes(10)).let {
             addTimeEntryDay(it, appDatabase)
+            it
         }
 
     val timeEntryDay2 =
-        TimeEntryDay(0, task3.taskId, LocalDate.of(2023, 4, 20), Duration.ofHours(2)).also {
+        TimeEntryDay(0, task3.taskId, LocalDate.of(2023, 4, 20), Duration.ofHours(2)).let {
             addTimeEntryDay(it, appDatabase)
+            it
         }
 
     val timeEntryDay3 =
-        TimeEntryDay(0, task.taskId, LocalDate.now(), Duration.ofHours(2)).also {
+        TimeEntryDay(0, task.taskId, LocalDate.now(), Duration.ofHours(2)).let {
             addTimeEntryDay(it, appDatabase)
+            it
         }
 
     val startTimeEntryDay4 = LocalDate.now().minusDays(1)
     val timeEntryDay4 =
-        TimeEntryDay(0, task2.taskId, startTimeEntryDay4, Duration.ofHours(2)).also {
+        TimeEntryDay(0, task2.taskId, startTimeEntryDay4, Duration.ofHours(2)).let {
             addTimeEntryDay(it, appDatabase)
+            it
         }
 
     addTagToTask(tag, task, appDatabase)
@@ -143,7 +155,7 @@ fun addTestData(appDatabase: AppDatabase) {
     addTimeEntriesToTasks(listOf(task, task2, task3), appDatabase)
 }
 
-private fun addTimeEntriesToTasks(tasks: Collection<Task>, appDatabase: AppDatabase) {
+private suspend fun addTimeEntriesToTasks(tasks: Collection<Task>, appDatabase: AppDatabase) {
     val random = Random(1)
 
     for (task in tasks) {
@@ -168,31 +180,31 @@ private fun addTimeEntriesToTasks(tasks: Collection<Task>, appDatabase: AppDatab
 }
 
 
-fun addProject(project: Project, appDatabase: AppDatabase) {
+suspend fun addProject(project: Project, appDatabase: AppDatabase) {
     project.projectId = appDatabase.projectDao().insertProject(project)
 }
 
-fun setProjectForTask(project: Project, task: Task, appDatabase: AppDatabase) {
+suspend fun setProjectForTask(project: Project, task: Task, appDatabase: AppDatabase) {
     appDatabase.taskDao().updateTask(task.copy(projectId = project.projectId))
 }
 
-fun addTag(tag: Tag, appDatabase: AppDatabase) {
+suspend fun addTag(tag: Tag, appDatabase: AppDatabase) {
     tag.tagId = appDatabase.tagDao().insertTag(tag)
 }
 
-fun addTagToTask(tag: Tag, task: Task, appDatabase: AppDatabase) {
+suspend fun addTagToTask(tag: Tag, task: Task, appDatabase: AppDatabase) {
     appDatabase.taskDao().insertTaskAndTagCrossRef(TagTasksCrossRef(tag.tagId, task.taskId))
 }
 
-fun addTask(task: Task, appDatabase: AppDatabase) {
+suspend fun addTask(task: Task, appDatabase: AppDatabase) {
     task.taskId = appDatabase.taskDao().insertTask(task)
 }
 
-fun addTimeEntry(timeEntry: TimeEntry, appDatabase: AppDatabase) {
+suspend fun addTimeEntry(timeEntry: TimeEntry, appDatabase: AppDatabase) {
     timeEntry.timeEntryId = appDatabase.timeEntryDao().insertTimeEntry(timeEntry)
 }
 
-fun addTimeEntryDay(timeEntryDay: TimeEntryDay, appDatabase: AppDatabase) {
+suspend fun addTimeEntryDay(timeEntryDay: TimeEntryDay, appDatabase: AppDatabase) {
     timeEntryDay.id = appDatabase.timeEntryDao().insertTimeEntryDay(timeEntryDay)
 }
 

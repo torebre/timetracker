@@ -6,33 +6,33 @@ import androidx.room.*
 interface TimeEntryDao {
 
     @Insert
-    fun insertTimeEntry(timeEntry: TimeEntry): Long
+    suspend fun insertTimeEntry(timeEntry: TimeEntry): Long
 
     @Update
-    fun updateTimeEntry(timeEntry: TimeEntry)
+    suspend fun updateTimeEntry(timeEntry: TimeEntry)
 
     @Delete
-    fun deleteTimeEntry(timeEntry: TimeEntry)
+    suspend fun deleteTimeEntry(timeEntry: TimeEntry)
 
     @Query("SELECT * FROM timeEntry WHERE timeEntryId = :timeEntryId")
-    fun getTimeEntry(timeEntryId: Long): TimeEntry?
+    suspend fun getTimeEntry(timeEntryId: Long): TimeEntry?
 
     @Query("SELECT * FROM timeEntry WHERE taskId = :taskId")
-    fun getTimeEntriesForTask(taskId: Long): List<TimeEntry>
+    suspend fun getTimeEntriesForTask(taskId: Long): List<TimeEntry>
 
     @Insert
-    fun insertTimeEntryDay(timeEntry: TimeEntryDay): Long
+    suspend fun insertTimeEntryDay(timeEntry: TimeEntryDay): Long
 
     @Update
-    fun updateTimeEntryDay(timeEntry: TimeEntryDay)
+    suspend fun updateTimeEntryDay(timeEntryDay: TimeEntryDay)
 
     @Delete
-    fun deleteTimeEntryDay(timeEntry: TimeEntryDay)
+    suspend fun deleteTimeEntryDay(timeEntryDay: TimeEntryDay)
 
     @Query("SELECT * FROM timeEntryDay WHERE id = :timeEntryId")
-    fun getTimeEntryDay(timeEntryId: Long): TimeEntryDay?
+    suspend fun getTimeEntryDay(timeEntryId: Long): TimeEntryDay?
 
     @Query("SELECT * FROM timeEntryDay WHERE taskId = :taskId")
-    fun getTimeEntriesDaysForTask(taskId: Long): List<TimeEntryDay>
+    suspend fun getTimeEntriesDaysForTask(taskId: Long): List<TimeEntryDay>
 
 }

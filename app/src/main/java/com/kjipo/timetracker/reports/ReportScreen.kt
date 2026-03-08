@@ -1,5 +1,6 @@
 package com.kjipo.timetracker.reports
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,6 +34,7 @@ import androidx.compose.ui.window.Dialog
 import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.formatDuration
+import com.kjipo.timetracker.reportDateFormatter
 import com.kjipo.timetracker.tasklist.Tag
 import timber.log.Timber
 import java.time.Duration
@@ -74,53 +77,31 @@ fun ReportScreen(
     customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit,
     selectedWeekChanged: (weekChange: Int) -> Unit
 ) {
-    val selectedTab = remember { mutableStateOf(SelectedTimeRange.DAY) }
     val showDialog = remember { mutableStateOf(false) }
 
     Column {
-        ScrollableTabRow(
-            selectedTabIndex = selectedTab.value.ordinal,
-            modifier = Modifier.height(50.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            SelectedTimeRange.entries.forEachIndexed { index, timeRange ->
-                Tab(
-                    selected = index == selectedTab.value.ordinal,
-                    onClick = {
-                        onTabSelected(timeRange)
-                        selectedTab.value = timeRange
-                    }) {
-                    Text(text = timeRange.name)
-                }
-            }
+            Text(text = reportDateFormatter.format(uiState.startAndStopTime.startTime))
+            Text(text = "-")
+            Text(text = reportDateFormatter.format(uiState.startAndStopTime.stopTime))
         }
 
-        if (selectedTab.value == SelectedTimeRange.CUSTOM) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
             Button(onClick = {
                 showDialog.value = true
             }) {
                 Text("Select range")
             }
-
-        } else if (selectedTab.value == SelectedTimeRange.WEEK) {
-            Row {
-                Button(onClick = {
-                    selectedWeekChanged(-1)
-                }) {
-                    Text("<")
-                }
-                Text(
-                    modifier = Modifier.padding(start = 5.dp, end = 5.dp),
-                    text = "${uiState.weekNumber}"
-                )
-                Button(onClick = {
-                    selectedWeekChanged(1)
-                }) {
-                    Text(">")
-                }
-            }
         }
-
-        Text("Start: ${uiState.startAndStopTime.startTime} - ${uiState.startAndStopTime.stopTime}")
 
         if (showDialog.value) {
             DateRangeModal(setShowDialog = { input ->

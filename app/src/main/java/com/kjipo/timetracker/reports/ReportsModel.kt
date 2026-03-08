@@ -35,7 +35,7 @@ class ReportsModel(private val taskRepository: TaskRepository) : ViewModel() {
 
 
     init {
-        setSelectedTimeRange(SelectedTimeRange.DAY)
+        setSelectedTimeRange(SelectedTimeRange.CUSTOM)
         loadTags()
     }
 
@@ -331,7 +331,7 @@ data class PieChartEntry(val tagId: Long, val percentage: Int, val colour: Color
 data class PieChartData(val pieChartEntries: List<PieChartEntry>)
 
 data class ReportsUiState(
-    val selectedTimeRange: SelectedTimeRange = SelectedTimeRange.DAY,
+    val selectedTimeRange: SelectedTimeRange = SelectedTimeRange.CUSTOM,
     val pieChartData: PieChartData? = null,
     val projectSummaries: List<ProjectSummary> = emptyList(),
     val customRange: DateRange = DateRange(LocalDateTime.now().minusDays(1), LocalDateTime.now()),

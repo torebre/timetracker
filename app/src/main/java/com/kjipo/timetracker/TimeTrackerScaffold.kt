@@ -285,7 +285,9 @@ private fun SetupNavHost(
         }
 
         composable(Screens.DAY.name) {
-            DayScreen(dayModel)
+            DayScreen(dayModel) { taskId ->
+                appState.navigateToScreen("${Screens.TASK.name}/$taskId")
+            }
         }
 
         composable(Screens.WEEKVIEW.name) {

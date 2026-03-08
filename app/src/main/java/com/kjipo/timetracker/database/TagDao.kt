@@ -6,22 +6,22 @@ import androidx.room.*
 interface TagDao {
 
     @Insert
-    fun insertTag(tag: Tag): Long
+    suspend fun insertTag(tag: Tag): Long
 
     @Update
-    fun updateTag(tag: Tag)
+    suspend fun updateTag(tag: Tag)
 
     @Delete
-    fun deleteTag(tag: Tag)
+    suspend fun deleteTag(tag: Tag)
 
     @Query("SELECT * FROM tag")
-    fun getTags(): List<Tag>
+    suspend fun getTags(): List<Tag>
 
     @Transaction
     @Query("SELECT * FROM tag WHERE tag.tagId = :tagId")
-    fun getTasksForTag(tagId: Long): List<TagWithTaskEntries>
+    suspend fun getTasksForTag(tagId: Long): List<TagWithTaskEntries>
 
     @Query("SELECT * FROM tag WHERE tag.tagId = :id")
-    fun getTag(id: Long): Tag?
+    suspend fun getTag(id: Long): Tag?
 
 }

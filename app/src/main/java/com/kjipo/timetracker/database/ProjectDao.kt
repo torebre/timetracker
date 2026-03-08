@@ -10,18 +10,18 @@ import androidx.room.Update
 interface ProjectDao {
 
     @Insert
-    fun insertProject(project: Project): Long
+    suspend fun insertProject(project: Project): Long
 
     @Update
-    fun updateProject(project: Project)
+    suspend fun updateProject(project: Project)
 
     @Delete
-    fun deleteProject(project: Project)
+    suspend fun deleteProject(project: Project)
 
     @Query("SELECT * FROM project")
-    fun getProjects(): List<Project>
+    suspend fun getProjects(): List<Project>
 
     @Query("SELECT * FROM project WHERE project.projectId = :id")
-    fun getProject(id: Long): Project?
+    suspend fun getProject(id: Long): Project?
 
 }
