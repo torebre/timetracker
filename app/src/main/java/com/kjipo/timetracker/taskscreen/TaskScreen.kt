@@ -1,14 +1,6 @@
 package com.kjipo.timetracker.taskscreen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,18 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.InputChip
+import androidx.compose.material3.*
 import androidx.compose.material3.InputChipDefaults.inputChipColors
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -60,7 +42,8 @@ class TaskScreenInput(
     val deleteTimeEntry: (Long) -> Unit,
     val addTimeEntry: (start: Instant, stop: Instant?) -> Unit,
     val getTimeEntry: suspend (Long) -> TimeEntry?,
-    val updateTimeEntry: (value: Long, start: Instant, stop: Instant?) -> Unit
+    val updateTimeEntry: (value: Long, start: Instant, stop: Instant?) -> Unit,
+    val toggleClosed: () -> Unit
 )
 
 @Composable
@@ -75,6 +58,9 @@ fun TaskScreen(
             taskScreenModel.deleteTimeEntry(timeEntryId)
         }, { start, stop ->
             taskScreenModel.addTimeEntry(start, stop)
+        },
+        {
+            taskScreenModel.toggleClosed()
         }
     )
 
@@ -86,6 +72,7 @@ fun TaskScreen(
     saveTask: (String, List<TaskMarkUiElement>, TaskMarkUiElement?) -> Unit,
     deleteTimeEntry: (Long) -> Unit,
     addTimeEntry: (start: Instant, stop: Instant?) -> Unit,
+    toggleClosed: () -> Unit
 ) {
     val uiState = taskScreenModel.uiState.collectAsState()
 
@@ -100,7 +87,8 @@ fun TaskScreen(
             },
             { timeEntryId, start, stop ->
                 taskScreenModel.updateTimeEntry(timeEntryId, start, stop)
-            }
+            },
+            toggleClosed
         )
     )
 }
@@ -162,13 +150,21 @@ fun TaskScreen(taskScreenInput: TaskScreenInput) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 TextField(
                     value = inputText.value,
                     onValueChange = { inputText.value = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.weight(1f),
                     textStyle = MaterialTheme.typography.headlineSmall
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Checkbox(
+                        checked = taskUiState.taskUi.closed,
+                        onCheckedChange = { taskScreenInput.toggleClosed() }
+                    )
+                    Text("Closed", style = MaterialTheme.typography.labelSmall)
+                }
             }
 
             Row {

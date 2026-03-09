@@ -207,8 +207,9 @@ private fun MainContentScaffold(
             FilterModal(
                 availableFilters = uiState.value.availableFilters,
                 initialSelectedFilters = uiState.value.selectedFilters,
-                onApply = { filters ->
-                    taskListModel.updateFilter(filters)
+                initialFilterClosed = uiState.value.filterClosed,
+                onApply = { filters, filterClosed ->
+                    taskListModel.updateFilter(filters, filterClosed)
                 },
                 setShowDialog = { show ->
                     showFilterModal = show
@@ -590,10 +591,12 @@ fun FloatingAddButton(contentDescription: String, onClickHandler: () -> Unit) {
 fun FilterModal(
     availableFilters: List<TaskMarkUiElement>,
     initialSelectedFilters: List<TaskMarkUiElement>,
-    onApply: (List<TaskMarkUiElement>) -> Unit,
+    initialFilterClosed: Boolean,
+    onApply: (List<TaskMarkUiElement>, Boolean) -> Unit,
     setShowDialog: (Boolean) -> Unit,
 ) {
     var selectedFilters by remember { mutableStateOf(initialSelectedFilters) }
+    var filterClosed by remember { mutableStateOf(initialFilterClosed) }
 
     Dialog(onDismissRequest = { setShowDialog(false) }) {
         Card(
@@ -611,6 +614,27 @@ fun FilterModal(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            filterClosed = !filterClosed
+                        }
+                        .padding(vertical = 8.dp)
+                ) {
+                    Checkbox(
+                        checked = filterClosed,
+                        onCheckedChange = { checked ->
+                            filterClosed = checked
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Filter out closed tasks")
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 LazyColumn(
                     modifier = Modifier
@@ -663,7 +687,7 @@ fun FilterModal(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
-                        onApply(selectedFilters)
+                        onApply(selectedFilters, filterClosed)
                         setShowDialog(false)
                     }) {
                         Text("Apply")

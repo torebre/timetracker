@@ -14,7 +14,8 @@ data class TaskUi(
     val totalDuration: Duration,
     val tags: List<TaskMarkUiElement> = emptyList(),
     val project: TaskMarkUiElement? = null,
-    val lastUpdated: Instant? = null
+    val lastUpdated: Instant? = null,
+    val closed: Boolean = false
 ) {
 
     val mostRecentStopTime: Instant? = timeEntries.maxOfOrNull { timeEntry ->

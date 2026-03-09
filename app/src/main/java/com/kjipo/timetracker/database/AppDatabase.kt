@@ -11,10 +11,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [TimeEntry::class, Task::class, Tag::class,
         TimeEntryTaskCrossRef::class, TagTasksCrossRef::class,
         TimeEntryDay::class, Project::class],
-    version = 8,
+    version = 9,
     exportSchema = true,
     autoMigrations = [
-        AutoMigration(from = 7, to = 8)
+        AutoMigration(from = 7, to = 8),
+        AutoMigration(from = 8, to = 9)
     ]
 )
 @TypeConverters(Converters::class)

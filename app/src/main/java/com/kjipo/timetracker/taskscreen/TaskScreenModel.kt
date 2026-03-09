@@ -151,6 +151,15 @@ class TaskScreenModel(
         }
     }
 
+    fun toggleClosed() {
+        viewModelScope.launch(Dispatchers.IO) {
+            taskRepository.getTask(taskId)?.let { task ->
+                taskRepository.updateTask(task.copy(closed = !task.closed))
+                loadTask()
+            }
+        }
+    }
+
     companion object {
 
         fun provideFactory(
@@ -170,12 +179,14 @@ class TaskScreenModel(
 
 data class TaskUi(
     val taskId: Long = 0,
-    val taskName: String = ""
+    val taskName: String = "",
+    val closed: Boolean = false
 ) {
 
     constructor(taskWithTimeEntries: TaskWithTimeEntries) : this(
         taskWithTimeEntries.task.taskId,
-        taskWithTimeEntries.task.title
+        taskWithTimeEntries.task.title,
+        taskWithTimeEntries.task.closed
     )
 
 }

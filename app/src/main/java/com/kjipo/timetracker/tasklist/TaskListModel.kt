@@ -74,9 +74,12 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
-    fun updateFilter(selectedFilters: List<TaskMarkUiElement>) {
+    fun updateFilter(selectedFilters: List<TaskMarkUiElement>, filterClosed: Boolean) {
         viewModelState.update {
-            it.copy(selectedFilters = selectedFilters)
+            it.copy(selectedFilters = selectedFilters, filterClosed = filterClosed)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            reloadTasks()
         }
     }
 
@@ -110,7 +113,7 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }.distinct()
 
         // Filter tasks based on selected filters
-        val filteredTasks = if (viewModelState.value.selectedFilters.isEmpty()) {
+        var filteredTasks = if (viewModelState.value.selectedFilters.isEmpty()) {
             tasks
         } else {
             tasks.filter { task ->
@@ -118,6 +121,10 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
                 // Check if the task has any of the selected tags/projects
                 taskMarks.any { mark -> viewModelState.value.selectedFilters.contains(mark) }
             }
+        }
+
+        if (viewModelState.value.filterClosed) {
+            filteredTasks = filteredTasks.filter { !it.closed }
         }
 
         viewModelState.update {
@@ -160,7 +167,8 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
             project = task.project?.let {
                 TaskMarkUiElement(it)
             },
-            lastUpdated = task.task.lastUpdated
+            lastUpdated = task.task.lastUpdated,
+            closed = task.task.closed
         )
     }
 

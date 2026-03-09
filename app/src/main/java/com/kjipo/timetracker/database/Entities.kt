@@ -60,13 +60,15 @@ data class TimeEntryDay(
         parentColumns = ["projectId"],
         childColumns = ["projectId"],
         onDelete = SET_NULL
-    )], indices = [Index("taskId")]
+    )], indices = [Index("taskId"), Index("projectId")]
 )
 data class Task(
     @PrimaryKey(autoGenerate = true) var taskId: Long = 0,
     val title: String,
     val projectId: Long? = null,
-    val lastUpdated: Instant? = null
+    val lastUpdated: Instant? = null,
+    @ColumnInfo(defaultValue = "0")
+    val closed: Boolean = false
 )
 
 @Entity
