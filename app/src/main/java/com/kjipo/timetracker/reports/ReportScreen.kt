@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,9 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
@@ -48,34 +45,26 @@ fun ReportScreen(reportsModel: ReportsModel) {
     val uiState = reportsModel.uiState.collectAsState()
 
     ReportScreen(
-        uiState, { selectedTimeRange ->
-            reportsModel.setSelectedTimeRange(selectedTimeRange)
-        }, { start, stop ->
+        uiState,
+        { start, stop ->
             reportsModel.setCustomDateRange(start, stop)
-        },
-        { weekChange: Int ->
-            reportsModel.changeSelectedWeek(weekChange)
-
-        })
+        }
+    )
 }
 
 @Composable
 fun ReportScreen(
     uiState: State<ReportsUiState>,
-    onTabSelected: (SelectedTimeRange) -> Unit,
-    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit,
-    selectedWeekChanged: (weekChange: Int) -> Unit
+    customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit
 ) {
     val uiStateValue = uiState.value
-    ReportScreen(uiStateValue, onTabSelected, customDateRangeChanged, selectedWeekChanged)
+    ReportScreen(uiStateValue, customDateRangeChanged)
 }
 
 @Composable
 fun ReportScreen(
     uiState: ReportsUiState,
-    onTabSelected: (SelectedTimeRange) -> Unit,
     customDateRangeChanged: (start: LocalDateTime, stop: LocalDateTime) -> Unit,
-    selectedWeekChanged: (weekChange: Int) -> Unit
 ) {
     val showDialog = remember { mutableStateOf(false) }
 
@@ -251,48 +240,48 @@ fun TaskSummaryRow(
         color = MaterialTheme.colorScheme.secondaryContainer
     ) {
         Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                modifier = Modifier.weight(0.8f),
-                style = MaterialTheme.typography.headlineSmall,
-                text = title,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    modifier = Modifier.weight(0.8f),
+                    style = MaterialTheme.typography.headlineSmall,
+                    text = title,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-            Spacer(modifier = Modifier.weight(0.1f))
+                Spacer(modifier = Modifier.weight(0.1f))
 
-            Text(
-                modifier = Modifier.weight(0.2f),
-                text = formatDuration(duration)
-            )
-        }
+                Text(
+                    modifier = Modifier.weight(0.2f),
+                    text = formatDuration(duration)
+                )
+            }
 
-        if (tags.isNotEmpty()) {
-            Row {
-                tags.forEachIndexed { index, tagUi ->
-                    val modifier = if (index == 0) {
-                        Modifier.padding()
-                    } else {
-                        Modifier.padding(start = 5.dp)
+            if (tags.isNotEmpty()) {
+                Row {
+                    tags.forEachIndexed { index, tagUi ->
+                        val modifier = if (index == 0) {
+                            Modifier.padding()
+                        } else {
+                            Modifier.padding(start = 5.dp)
+                        }
+                        val colour = tagUi.colour?.let {
+                            Color(it.red(), it.green(), it.blue())
+                        }
+                        Tag(tagUi.title, colour, modifier)
                     }
-                    val colour = tagUi.colour?.let {
+                }
+            }
+
+            project?.let { selectedProject ->
+                Row(modifier = Modifier.padding(top = 5.dp)) {
+                    val colour = selectedProject.colour?.let {
                         Color(it.red(), it.green(), it.blue())
                     }
-                    Tag(tagUi.title, colour, modifier)
+                    Tag(selectedProject.title, colour, Modifier.padding())
                 }
             }
-        }
-
-        project?.let { selectedProject ->
-            Row(modifier = Modifier.padding(top = 5.dp)) {
-                val colour = selectedProject.colour?.let {
-                    Color(it.red(), it.green(), it.blue())
-                }
-                Tag(selectedProject.title, colour, Modifier.padding())
-            }
-        }
         }
     }
 }

@@ -10,6 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +19,10 @@ import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun TagListScreen(tagModel: TaskMarkerModel, goToTagScreen: (Long) -> Unit) {
+    LaunchedEffect(Unit) {
+        tagModel.reload()
+    }
+
     TagListScreen(
         tagModel.uiState,
         goToTagScreen
@@ -28,10 +34,11 @@ fun TagListScreen(
     tagListUiState: StateFlow<TagListUiState>,
     goToTag: (tagId: Long) -> Unit
 ) {
+    val state by tagListUiState.collectAsState()
 
 
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(items = tagListUiState.value.tags,
+        items(items = state.tags,
             key = { tag ->
                 tag.elementId
             }) {

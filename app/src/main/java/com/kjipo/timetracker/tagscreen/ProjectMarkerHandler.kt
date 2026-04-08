@@ -32,15 +32,18 @@ internal class ProjectMarkerHandler(
 
         viewModelState.update { it.copy(loading = true) }
         viewModelScope.launch(Dispatchers.IO) {
-            currentProject = taskRepository.getProject(id)
-        }
+            val project = taskRepository.getProject(id)
+            currentProject = project
 
-        currentProject?.let {
-            viewModelState.update { tagListUiState ->
-                tagListUiState.copy(
-                    tag = TaskMarkUiElement(it),
-                    loading = false
-                )
+            project?.let {
+                viewModelState.update { tagListUiState ->
+                    tagListUiState.copy(
+                        tag = TaskMarkUiElement(it),
+                        loading = false
+                    )
+                }
+            } ?: run {
+                viewModelState.update { it.copy(loading = false) }
             }
         }
     }

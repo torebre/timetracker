@@ -31,15 +31,18 @@ internal class TagMarkerHandler(
 
         viewModelState.update { it.copy(loading = true) }
         viewModelScope.launch(Dispatchers.IO) {
-            currentTag = taskRepository.getTag(id)
-        }
+            val tag = taskRepository.getTag(id)
+            currentTag = tag
 
-        currentTag?.let {
-            viewModelState.update { tagListUiState ->
-                tagListUiState.copy(
-                    tag = TaskMarkUiElement(it),
-                    loading = false
-                )
+            tag?.let {
+                viewModelState.update { tagListUiState ->
+                    tagListUiState.copy(
+                        tag = TaskMarkUiElement(it),
+                        loading = false
+                    )
+                }
+            } ?: run {
+                viewModelState.update { it.copy(loading = false) }
             }
         }
     }
