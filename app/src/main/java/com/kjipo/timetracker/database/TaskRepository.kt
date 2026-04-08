@@ -77,6 +77,8 @@ interface TaskRepository {
 
     suspend fun removeProject(taskId: Long, projectId: Long)
 
+    suspend fun getProjectWithTimeEntries(projectId: Long): ProjectWithTimeEntries?
+
     suspend fun updateTimeEntry(timeEntry: Long, start: Instant, stop: Instant?): TimeEntry?
 
 }
@@ -279,6 +281,10 @@ class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository 
 
     override suspend fun removeProject(taskId: Long, projectId: Long) {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun getProjectWithTimeEntries(projectId: Long): ProjectWithTimeEntries? {
+        return appDatabase.projectDao().getProjectWithTimeEntries(projectId)
     }
 
     companion object {

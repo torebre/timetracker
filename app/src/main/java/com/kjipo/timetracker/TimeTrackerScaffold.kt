@@ -32,6 +32,7 @@ import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
 import com.kjipo.timetracker.taskmarkelementlistscreen.TaskMarkerModel
 import com.kjipo.timetracker.taskmarkelementlistscreen.TagListScreen
+import com.kjipo.timetracker.tagscreen.ProjectScreen
 import com.kjipo.timetracker.tagscreen.TaskMarkElementScreen
 import com.kjipo.timetracker.tagscreen.TagScreenModel
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
@@ -374,13 +375,15 @@ private fun GoToTaskMarkerScreen(
         taskMarkerModel.setCurrentTag(it)
     }
 
-    TaskMarkElementScreen(taskMarkerModel, navigateToElementList = {
-        if (isTag) {
+    if (isTag) {
+        TaskMarkElementScreen(taskMarkerModel, navigateToElementList = {
             appState.navigateToScreen(Screens.TAGS.name)
-        } else {
+        })
+    } else {
+        ProjectScreen(taskMarkerModel, navigateToElementList = {
             appState.navigateToScreen(Screens.PROJECTS.name)
-        }
-    })
+        })
+    }
 }
 
 @Composable

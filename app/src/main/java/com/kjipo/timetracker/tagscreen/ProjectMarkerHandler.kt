@@ -32,14 +32,18 @@ internal class ProjectMarkerHandler(
 
         viewModelState.update { it.copy(loading = true) }
         viewModelScope.launch(Dispatchers.IO) {
-            val project = taskRepository.getProject(id)
+            val projectWithTimeEntries = taskRepository.getProjectWithTimeEntries(id)
+            val project = projectWithTimeEntries?.project
             currentProject = project
 
             project?.let {
+                val timeEntries = projectWithTimeEntries.taskEntries.flatMap { it.timeEntries }
+
                 viewModelState.update { tagListUiState ->
                     tagListUiState.copy(
                         tag = TaskMarkUiElement(it),
-                        loading = false
+                        loading = false,
+                        timeEntries = timeEntries
                     )
                 }
             } ?: run {

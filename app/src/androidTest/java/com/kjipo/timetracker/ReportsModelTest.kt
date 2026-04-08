@@ -55,7 +55,7 @@ class ReportsModelTest {
     }
 
     @Test
-    fun timeEntryListContainsEntries() {
+    fun timeEntryListContainsEntries() = kotlinx.coroutines.test.runTest {
         val project =
             Project(0, "Project 1").also { addProject(it, database) }
         val project2 =

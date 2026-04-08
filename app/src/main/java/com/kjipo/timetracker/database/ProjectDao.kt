@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 
 @Dao
@@ -21,7 +22,11 @@ interface ProjectDao {
     @Query("SELECT * FROM project")
     suspend fun getProjects(): List<Project>
 
-    @Query("SELECT * FROM project WHERE project.projectId = :id")
+    @Query("SELECT * FROM project WHERE projectId = :id")
     suspend fun getProject(id: Long): Project?
+
+    @Transaction
+    @Query("SELECT * FROM project WHERE projectId = :projectId")
+    suspend fun getProjectWithTimeEntries(projectId: Long): ProjectWithTimeEntries?
 
 }

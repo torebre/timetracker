@@ -11,7 +11,11 @@ import com.kjipo.timetracker.database.Tag
 fun Color.toAndroidGraphicsColor() = android.graphics.Color.valueOf(red, green, blue, alpha)
 
 
-data class TaskMarkElementUiState(val tag: TaskMarkUiElement, val loading: Boolean = false)
+data class TaskMarkElementUiState(
+    val tag: TaskMarkUiElement,
+    val loading: Boolean = false,
+    val timeEntries: List<com.kjipo.timetracker.database.TimeEntry> = emptyList()
+)
 
 
 data class TaskMarkUiElement(val elementId: Long, val title: String, val colour: Color?) {

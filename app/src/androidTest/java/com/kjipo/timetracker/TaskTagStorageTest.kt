@@ -32,7 +32,7 @@ class TaskTagStorageTest {
     }
 
     @Test
-    fun storeTaskTagConnectionTest() {
+    fun storeTaskTagConnectionTest() = kotlinx.coroutines.test.runTest {
         val tag = Tag(title = "Test tag")
         database.tagDao().insertTag(tag).also { tag.tagId = it }
 

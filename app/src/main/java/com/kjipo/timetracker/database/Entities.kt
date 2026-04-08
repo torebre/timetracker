@@ -157,21 +157,22 @@ data class TagWithTaskEntries(
     val taskEntries: List<Task>
 )
 
-@Entity(
-    primaryKeys = ["projectId", "taskId"],
-    indices = [Index("projectId")]
-)
-data class ProjectTasksCrossRef(
-    val projectId: Long,
-    val taskId: Long
-)
-
 data class ProjectWithTaskEntries(
     @Embedded val project: Project,
     @Relation(
+        entity = Task::class,
         parentColumn = "projectId",
-        entityColumn = "taskId",
-        associateBy = Junction(ProjectTasksCrossRef::class)
+        entityColumn = "projectId"
     )
-    val taskEntries: List<Project>
+    val taskEntries: List<Task>
+)
+
+data class ProjectWithTimeEntries(
+    @Embedded val project: Project,
+    @Relation(
+        entity = Task::class,
+        parentColumn = "projectId",
+        entityColumn = "projectId"
+    )
+    val taskEntries: List<TaskWithTimeEntries>
 )
