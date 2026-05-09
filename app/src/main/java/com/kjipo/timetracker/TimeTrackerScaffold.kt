@@ -30,6 +30,8 @@ import androidx.navigation.compose.composable
 import com.kjipo.timetracker.export.ExportScreen
 import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
+import com.kjipo.timetracker.reports.SprintReportModel
+import com.kjipo.timetracker.reports.SprintReportScreen
 import com.kjipo.timetracker.taskmarkelementlistscreen.TaskMarkerModel
 import com.kjipo.timetracker.taskmarkelementlistscreen.TagListScreen
 import com.kjipo.timetracker.tagscreen.ProjectScreen
@@ -59,7 +61,7 @@ fun TimeTrackerScaffold(
     appContainer: AppContainer
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS, Screens.EXPORT)
+    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS, Screens.SPRINT_REPORT, Screens.EXPORT)
     val scope = rememberCoroutineScope()
     val selectedItem = remember { mutableStateOf(drawerItems[0]) }
 
@@ -149,6 +151,10 @@ private fun MainContentScaffold(
         factory = DayModel.provideFactory(appContainer.taskRepository)
     )
 
+    val sprintReportModel: SprintReportModel = viewModel(
+        factory = SprintReportModel.provideFactory(appContainer.taskRepository)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Top bar") },
@@ -201,7 +207,7 @@ private fun MainContentScaffold(
             )
         }
     ) { paddingValues ->
-        SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel, dayModel)
+        SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel, dayModel, sprintReportModel)
 
         if (showFilterModal) {
             val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
@@ -271,7 +277,8 @@ private fun SetupNavHost(
     appContainer: AppContainer,
     taskListModel: TaskListModel,
     reportsModel: ReportsModel,
-    dayModel: DayModel
+    dayModel: DayModel,
+    sprintReportModel: SprintReportModel
 ) {
     NavHost(
         navController = appState.navController,
@@ -284,6 +291,12 @@ private fun SetupNavHost(
 
         composable(Screens.REPORTS.name) {
             ReportScreen(reportsModel)
+        }
+
+        composable(Screens.SPRINT_REPORT.name) {
+            SprintReportScreen(sprintReportModel) { taskId ->
+                appState.navigateToScreen("${Screens.TASK.name}/$taskId")
+            }
         }
 
         composable(Screens.DAY.name) {

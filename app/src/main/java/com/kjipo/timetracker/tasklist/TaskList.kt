@@ -163,6 +163,22 @@ private fun TaskListEntry(
     toggleStartStop: (Long) -> Unit,
     showAsActive: Boolean
 ) {
+    TaskRow(
+        taskUi,
+        navigateToTaskScreen,
+        toggleStartStop,
+        showAsActive
+    )
+}
+
+
+@Composable
+fun TaskRow(
+    task: TaskUi,
+    navigateToTaskScreen: (Long) -> Unit,
+    toggleStartStop: ((Long) -> Unit)? = null,
+    showAsActive: Boolean
+) {
     val color = if (showAsActive) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
@@ -174,107 +190,90 @@ private fun TaskListEntry(
         color = color,
         shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
     ) {
-        TaskRow(
-            taskUi,
-            navigateToTaskScreen,
-            toggleStartStop,
-            showAsActive
-        )
-    }
-}
+        Row(
+            modifier = Modifier
+                .padding(5.dp)
+                .fillMaxWidth(),
+        ) {
+            Column {
+                Text(
+                    modifier = Modifier
+                        .clickable {
+                            navigateToTaskScreen(task.id)
+                        },
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        textDecoration = if (task.closed) TextDecoration.LineThrough else TextDecoration.None
+                    ),
+                    text = task.title
+                )
 
+                if (showAsActive) {
+                    Row {
+                        Text(modifier = Modifier.defaultMinSize(70.dp), text = "Current:")
+                        Text(
+                            text =
+                            task.getCurrentDuration()?.let {
+                                formatDuration(it)
+                            } ?: ""
+                        )
+                    }
+                }
 
-@Composable
-fun TaskRow(
-    task: TaskUi,
-    navigateToTaskScreen: (Long) -> Unit,
-    toggleStartStop: (Long) -> Unit,
-    showAsActive: Boolean
-) {
-    Row(
-        modifier = Modifier
-            .padding(5.dp)
-            .fillMaxWidth(),
-    ) {
-        Column {
-            Text(
-                modifier = Modifier
-                    .clickable {
-                        navigateToTaskScreen(task.id)
-                    },
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    textDecoration = if (task.closed) TextDecoration.LineThrough else TextDecoration.None
-                ),
-                text = task.title
-            )
-
-            if (showAsActive) {
                 Row {
-                    Text(modifier = Modifier.defaultMinSize(70.dp), text = "Current:")
+                    Text(modifier = Modifier.defaultMinSize(70.dp), text = "Total:")
                     Text(
-                        text =
-                        task.getCurrentDuration()?.let {
-                            formatDuration(it)
-                        } ?: ""
+                        text = formatDuration(task.computeDurationOfNotOpenEntries())
                     )
                 }
-            }
 
-            Row {
-                Text(modifier = Modifier.defaultMinSize(70.dp), text = "Total:")
-                Text(
-                    text = formatDuration(task.computeDurationOfNotOpenEntries())
-                )
-            }
-
-            if (task.tags.isNotEmpty()) {
-                Row {
-                    task.tags.forEachIndexed { index, tagUi ->
-                        val modifier = if (index == 0) {
-                            Modifier.padding()
-                        } else {
-                            Modifier.padding(start = 5.dp)
+                if (task.tags.isNotEmpty()) {
+                    Row {
+                        task.tags.forEachIndexed { index, tagUi ->
+                            val modifier = if (index == 0) {
+                                Modifier.padding()
+                            } else {
+                                Modifier.padding(start = 5.dp)
+                            }
+                            Tag(tagUi, modifier)
                         }
-                        Tag(tagUi, modifier)
-                    }
-                }
-            }
-
-            task.project?.let { project ->
-                Row(modifier = Modifier.padding(top = 5.dp)) {
-                    Tag(project, Modifier)
-                }
-            }
-
-            // TODO Temporarily in its own row here to make the button visible then the title is long
-            Row {
-                // This is to push the buttons to the end of the row
-                Spacer(Modifier.weight(1f))
-
-                IconButton(modifier = Modifier
-                    .padding(end = 5.dp)
-                    .align(Alignment.CenterVertically),
-                    onClick = {
-                        toggleStartStop(task.id)
-                    }) {
-                    if (task.isOngoing()) {
-                        // TODO Use better icon
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Stop"
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Start"
-                        )
                     }
                 }
 
+                task.project?.let { project ->
+                    Row(modifier = Modifier.padding(top = 5.dp)) {
+                        Tag(project, Modifier)
+                    }
+                }
 
+                // TODO Temporarily in its own row here to make the button visible then the title is long
+                Row {
+                    // This is to push the buttons to the end of the row
+                    Spacer(Modifier.weight(1f))
+
+                    toggleStartStop?.let { toggle ->
+                        IconButton(modifier = Modifier
+                            .padding(end = 5.dp)
+                            .align(Alignment.CenterVertically),
+                            onClick = {
+                                toggle(task.id)
+                            }) {
+                            if (task.isOngoing()) {
+                                // TODO Use better icon
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Stop"
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Start"
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
-
     }
 }
 
