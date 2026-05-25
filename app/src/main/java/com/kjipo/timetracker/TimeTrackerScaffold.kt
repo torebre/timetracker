@@ -20,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -100,10 +102,21 @@ private fun SetupModalDrawer(
     appContainer: AppContainer,
     sprintsViewModel: SprintsViewModel
 ) {
+    val context = LocalContext.current
+
     ModalDrawerSheet {
         drawerItems.forEach { drawerItem ->
             NavigationDrawerItem(label = {
-                Text(drawerItem.name)
+                val resourceId = context.resources.getIdentifier(
+                    drawerItem.name.lowercase(),
+                    "string",
+                    context.packageName
+                )
+                if (resourceId != 0) {
+                    Text(stringResource(resourceId))
+                } else {
+                    Text(drawerItem.name)
+                }
             },
                 selected = drawerItem == selectedItem.value,
                 onClick = {
@@ -116,7 +129,7 @@ private fun SetupModalDrawer(
         }
 
         NavigationDrawerItem(label = {
-            Text("Setup test data")
+            Text(stringResource(R.string.setup_test_data))
         },
             selected = false,
             onClick = {
@@ -133,7 +146,7 @@ private fun SetupModalDrawer(
             })
 
         NavigationDrawerItem(label = {
-            Text("Clear database")
+            Text(stringResource(R.string.clear_database))
         },
             selected = false,
             onClick = {
@@ -184,7 +197,7 @@ private fun MainContentScaffold(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Top bar") },
+            TopAppBar(title = { Text(stringResource(R.string.top_bar)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -195,22 +208,22 @@ private fun MainContentScaffold(
                             // TODO
 
                         }) {
-                            Text("Filter")
+                            Text(stringResource(R.string.filter))
                         }
                         Button(onClick = {
                             showSortMenu = true
                         }) {
-                            Text("Sort")
+                            Text(stringResource(R.string.sort))
                         }
                     } else if (appState.screenShowing.value == Screens.REPORTS) {
                         Button(onClick = {
                             showTagSelection = true
-                        }) { Text("Tags") }
+                        }) { Text(stringResource(R.string.tags)) }
                     }
                     Button(onClick = {
                         showBottomSheet = true
                     }) {
-                        Text("Test")
+                        Text(stringResource(R.string.test))
                     }
                 })
         },
@@ -269,21 +282,20 @@ private fun MainContentScaffold(
             DropdownMenu(expanded = showSortMenu,
                 onDismissRequest = { showSortMenu = false }) {
                 DropdownMenuItem(text = {
-                    Text("Recently used")
+                    Text(stringResource(R.string.recently_used))
                 },
                     onClick = {
                         taskListModel.setSortOrder(SortOrder.RECENTLY_USED)
                         showSortMenu = false
                     })
                 DropdownMenuItem(text = {
-                    Text("Default")
+                    Text(stringResource(R.string.default_sort))
                 },
                     onClick = {
                         taskListModel.setSortOrder(SortOrder.DEFAULT)
                         showSortMenu = false
                     })
             }
-
         }
 
         if (showBottomSheet) {
@@ -753,18 +765,18 @@ fun FilterModal(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { selectedFilters = emptyList() }) {
-                        Text("Clear All")
+                        Text(stringResource(R.string.clear_all))
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     TextButton(onClick = { setShowDialog(false) }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
                         onApply(selectedFilters, filterClosed)
                         setShowDialog(false)
                     }) {
-                        Text("Apply")
+                        Text(stringResource(R.string.apply))
                     }
                 }
             }
