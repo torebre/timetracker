@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneOffset
@@ -24,6 +25,7 @@ data class SprintReportUiState(
     val endDate: LocalDateTime,
     val plannedDuration: Duration = Duration.ZERO,
     val unplannedDuration: Duration = Duration.ZERO,
+    val totalAvailableDuration: Duration = Duration.ZERO,
     val tasks: List<TaskUi> = emptyList(),
     val availableSprints: List<Sprint> = emptyList(),
     val selectedSprintId: Long? = null
@@ -33,6 +35,8 @@ class SprintReportModel(
     private val taskRepository: TaskRepository,
     private val sprintDao: SprintDao
 ) : ViewModel() {
+
+    private val defaultWorkingDuration = Duration.ofHours(7).plusMinutes(45)
 
     private val uiStateInternal = MutableStateFlow(
         SprintReportUiState(
@@ -84,6 +88,13 @@ class SprintReportModel(
         viewModelScope.launch {
             val start = uiStateInternal.value.startDate
             val end = uiStateInternal.value.endDate
+            val selectedSprintId = uiStateInternal.value.selectedSprintId
+
+            val totalAvailableDuration = if (selectedSprintId != null) {
+                calculateTotalAvailableDuration(selectedSprintId, start.toLocalDate(), end.toLocalDate())
+            } else {
+                Duration.ZERO
+            }
 
             val tasksWithTimeEntries = taskRepository.getTasksWithTimeEntries(start, end)
             
@@ -119,10 +130,50 @@ class SprintReportModel(
                 it.copy(
                     plannedDuration = Duration.ofMillis(plannedMillis),
                     unplannedDuration = Duration.ofMillis(unplannedMillis),
+                    totalAvailableDuration = totalAvailableDuration,
                     tasks = taskUis
                 )
             }
         }
+    }
+
+    private suspend fun calculateTotalAvailableDuration(
+        sprintId: Long,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): Duration {
+        val sprintDays = sprintDao.getSprintDays(sprintId).associateBy { it.date }
+        val customDays = sprintDao.getCustomDays(sprintId).associateBy { it.date }
+        val dayTypes = sprintDao.getDayTypes().associateBy { it.dayTypeId }
+
+        var totalDuration = Duration.ZERO
+        var currentDate = startDate
+
+        while (!currentDate.isAfter(endDate)) {
+            val customDay = customDays[currentDate]
+            val sprintDay = sprintDays[currentDate]
+
+            val dayDuration = when {
+                customDay != null -> {
+                    Duration.ofMinutes((customDay.workingHours * 60).toLong())
+                }
+                sprintDay != null -> {
+                    val dayType = dayTypes[sprintDay.dayTypeId]
+                    if (dayType != null) {
+                        Duration.ofMinutes((dayType.workingHours * 60).toLong())
+                    } else {
+                        defaultWorkingDuration
+                    }
+                }
+                else -> {
+                    defaultWorkingDuration
+                }
+            }
+            totalDuration = totalDuration.plus(dayDuration)
+            currentDate = currentDate.plusDays(1)
+        }
+
+        return totalDuration
     }
 
     companion object {
