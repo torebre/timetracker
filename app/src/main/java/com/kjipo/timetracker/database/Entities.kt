@@ -147,6 +147,65 @@ data class TaskWithTimeEntries(
 
 }
 
+@Entity
+data class Sprint(
+    @PrimaryKey(autoGenerate = true) var sprintId: Long = 0,
+    val title: String,
+    val startDate: LocalDate,
+    val endDate: LocalDate
+)
+
+@Entity(
+    indices = [Index(value = ["title"], unique = true)]
+)
+data class DayType(
+    @PrimaryKey(autoGenerate = true) var dayTypeId: Long = 0,
+    val title: String,
+    val workingHours: Double
+)
+
+@Entity(
+    foreignKeys = [
+        ForeignKey(
+            entity = Sprint::class,
+            parentColumns = ["sprintId"],
+            childColumns = ["sprintId"],
+            onDelete = CASCADE
+        ),
+        ForeignKey(
+            entity = DayType::class,
+            parentColumns = ["dayTypeId"],
+            childColumns = ["dayTypeId"],
+            onDelete = CASCADE
+        )
+    ],
+    indices = [Index("sprintId"), Index("dayTypeId")]
+)
+data class SprintDay(
+    @PrimaryKey(autoGenerate = true) var sprintDayId: Long = 0,
+    val sprintId: Long,
+    val dayTypeId: Long,
+    val date: LocalDate
+)
+
+@Entity(
+    foreignKeys = [
+        ForeignKey(
+            entity = Sprint::class,
+            parentColumns = ["sprintId"],
+            childColumns = ["sprintId"],
+            onDelete = CASCADE
+        )
+    ],
+    indices = [Index("sprintId")]
+)
+data class CustomDay(
+    @PrimaryKey(autoGenerate = true) var customDayId: Long = 0,
+    val sprintId: Long,
+    val date: LocalDate,
+    val workingHours: Double
+)
+
 data class TagWithTaskEntries(
     @Embedded val tag: Tag,
     @Relation(

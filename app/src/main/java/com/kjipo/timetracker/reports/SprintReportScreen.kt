@@ -1,13 +1,17 @@
 package com.kjipo.timetracker.reports
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kjipo.timetracker.database.Sprint
 import com.kjipo.timetracker.formatDuration
 import com.kjipo.timetracker.tasklist.TaskRow
 import com.kjipo.timetracker.tasklist.TaskUi
@@ -37,11 +41,17 @@ fun SprintReportScreen(
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
-            DateSelectionSection(
+            SprintSelectionSection(
+                selectedSprintId = uiState.selectedSprintId,
+                availableSprints = uiState.availableSprints,
+                onSprintSelected = { model.selectSprint(it) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            DateDisplaySection(
                 startDate = uiState.startDate,
-                endDate = uiState.endDate,
-                onStartDateSelected = { model.setStartDate(it) },
-                onEndDateSelected = { model.setEndDate(it) }
+                endDate = uiState.endDate
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -66,17 +76,61 @@ fun SprintReportScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DateSelectionSection(
-    startDate: LocalDateTime,
-    endDate: LocalDateTime,
-    onStartDateSelected: (LocalDateTime) -> Unit,
-    onEndDateSelected: (LocalDateTime) -> Unit
+fun SprintSelectionSection(
+    selectedSprintId: Long?,
+    availableSprints: List<Sprint>,
+    onSprintSelected: (Long) -> Unit
 ) {
-    var showStartDatePicker by remember { mutableStateOf(false) }
-    var showEndDatePicker by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
+    val selectedSprint = availableSprints.find { it.sprintId == selectedSprintId }
 
+    Column {
+        Text(
+            text = "Select Sprint",
+            style = MaterialTheme.typography.labelMedium
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(vertical = 8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = selectedSprint?.title ?: "No sprint selected",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select sprint")
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                availableSprints.forEach { sprint ->
+                    DropdownMenuItem(
+                        text = { Text(sprint.title) },
+                        onClick = {
+                            onSprintSelected(sprint.sprintId)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DateDisplaySection(
+    startDate: LocalDateTime,
+    endDate: LocalDateTime
+) {
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     Row(
@@ -84,73 +138,13 @@ fun DateSelectionSection(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Start Date")
-            Button(onClick = { showStartDatePicker = true }) {
-                Text(startDate.format(formatter))
-            }
+            Text("Start Date", style = MaterialTheme.typography.labelMedium)
+            Text(startDate.format(formatter), style = MaterialTheme.typography.bodyLarge)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("End Date")
-            Button(onClick = { showEndDatePicker = true }) {
-                Text(endDate.format(formatter))
-            }
+            Text("End Date", style = MaterialTheme.typography.labelMedium)
+            Text(endDate.format(formatter), style = MaterialTheme.typography.bodyLarge)
         }
-    }
-
-    if (showStartDatePicker) {
-        DatePickerModal(
-            initialDate = startDate,
-            onDateSelected = {
-                it?.let { onStartDateSelected(it) }
-                showStartDatePicker = false
-            },
-            onDismiss = { showStartDatePicker = false }
-        )
-    }
-
-    if (showEndDatePicker) {
-        DatePickerModal(
-            initialDate = endDate,
-            onDateSelected = {
-                it?.let { onEndDateSelected(it) }
-                showEndDatePicker = false
-            },
-            onDismiss = { showEndDatePicker = false }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DatePickerModal(
-    initialDate: LocalDateTime,
-    onDateSelected: (LocalDateTime?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    )
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                onDateSelected(
-                    datePickerState.selectedDateMillis?.let {
-                        LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault())
-                    }
-                )
-            }) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    ) {
-        DatePicker(state = datePickerState)
     }
 }
 

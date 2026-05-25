@@ -3,16 +3,20 @@ package com.kjipo.timetracker.reports
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.kjipo.timetracker.database.Sprint
+import com.kjipo.timetracker.database.SprintDao
 import com.kjipo.timetracker.database.TaskRepository
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
 import com.kjipo.timetracker.tasklist.TaskUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneOffset
 
 data class SprintReportUiState(
@@ -20,10 +24,15 @@ data class SprintReportUiState(
     val endDate: LocalDateTime,
     val plannedDuration: Duration = Duration.ZERO,
     val unplannedDuration: Duration = Duration.ZERO,
-    val tasks: List<TaskUi> = emptyList()
+    val tasks: List<TaskUi> = emptyList(),
+    val availableSprints: List<Sprint> = emptyList(),
+    val selectedSprintId: Long? = null
 )
 
-class SprintReportModel(private val taskRepository: TaskRepository) : ViewModel() {
+class SprintReportModel(
+    private val taskRepository: TaskRepository,
+    private val sprintDao: SprintDao
+) : ViewModel() {
 
     private val uiStateInternal = MutableStateFlow(
         SprintReportUiState(
@@ -34,7 +43,31 @@ class SprintReportModel(private val taskRepository: TaskRepository) : ViewModel(
     val uiState: StateFlow<SprintReportUiState> = uiStateInternal.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            sprintDao.getAllSprints().collectLatest { sprints ->
+                uiStateInternal.update { it.copy(availableSprints = sprints) }
+                if (uiStateInternal.value.selectedSprintId == null && sprints.isNotEmpty()) {
+                    selectSprint(sprints.first().sprintId)
+                }
+            }
+        }
         updateReport()
+    }
+
+    fun selectSprint(sprintId: Long) {
+        viewModelScope.launch {
+            val sprint = sprintDao.getSprint(sprintId)
+            if (sprint != null) {
+                uiStateInternal.update {
+                    it.copy(
+                        selectedSprintId = sprintId,
+                        startDate = sprint.startDate.atStartOfDay(),
+                        endDate = sprint.endDate.atTime(LocalTime.MAX)
+                    )
+                }
+                updateReport()
+            }
+        }
     }
 
     fun setStartDate(date: LocalDateTime) {
@@ -93,11 +126,14 @@ class SprintReportModel(private val taskRepository: TaskRepository) : ViewModel(
     }
 
     companion object {
-        fun provideFactory(taskRepository: TaskRepository): ViewModelProvider.Factory =
+        fun provideFactory(
+            taskRepository: TaskRepository,
+            sprintDao: SprintDao
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return SprintReportModel(taskRepository) as T
+                    return SprintReportModel(taskRepository, sprintDao) as T
                 }
             }
     }

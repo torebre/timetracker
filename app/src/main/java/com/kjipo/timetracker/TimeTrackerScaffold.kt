@@ -32,6 +32,9 @@ import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
 import com.kjipo.timetracker.reports.SprintReportModel
 import com.kjipo.timetracker.reports.SprintReportScreen
+import com.kjipo.timetracker.sprints.SprintsViewModel
+import com.kjipo.timetracker.sprints.SprintsScreen
+import com.kjipo.timetracker.sprints.SprintEditScreen
 import com.kjipo.timetracker.taskmarkelementlistscreen.TaskMarkerModel
 import com.kjipo.timetracker.taskmarkelementlistscreen.TagListScreen
 import com.kjipo.timetracker.tagscreen.ProjectScreen
@@ -46,6 +49,7 @@ import com.kjipo.timetracker.taskscreen.TaskScreenModel
 import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
 import com.kjipo.timetracker.weekview.WeekViewModel
+import com.kjipo.timetracker.database.DayType
 import com.kjipo.timetracker.day.DayModel
 import com.kjipo.timetracker.day.DayScreen
 import com.kjipo.timetracker.weekview.WeekViewScreen
@@ -60,18 +64,29 @@ fun TimeTrackerScaffold(
     appState: TimeTrackerAppState,
     appContainer: AppContainer
 ) {
+    val sprintsViewModel: SprintsViewModel = viewModel(
+        factory = SprintsViewModel.provideFactory(appContainer.taskRepository)
+    )
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS, Screens.SPRINT_REPORT, Screens.EXPORT)
+    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS, Screens.SPRINT_REPORT, Screens.SPRINTS, Screens.EXPORT)
     val scope = rememberCoroutineScope()
     val selectedItem = remember { mutableStateOf(drawerItems[0]) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            SetupModalDrawer(drawerItems, selectedItem, scope, drawerState, appState, appContainer)
+            SetupModalDrawer(
+                drawerItems,
+                selectedItem,
+                scope,
+                drawerState,
+                appState,
+                appContainer,
+                sprintsViewModel
+            )
         })
     {
-        MainContentScaffold(appState, appContainer)
+        MainContentScaffold(appState, appContainer, sprintsViewModel)
     }
 }
 
@@ -82,7 +97,8 @@ private fun SetupModalDrawer(
     scope: CoroutineScope,
     drawerState: DrawerState,
     appState: TimeTrackerAppState,
-    appContainer: AppContainer
+    appContainer: AppContainer,
+    sprintsViewModel: SprintsViewModel
 ) {
     ModalDrawerSheet {
         drawerItems.forEach { drawerItem ->
@@ -106,7 +122,13 @@ private fun SetupModalDrawer(
             onClick = {
                 scope.launch(Dispatchers.IO) {
                     appContainer.appDatabase.clearAllTables()
+                    // Re-insert default day types as clearAllTables() wipes them out
+                    // and they are needed for foreign key constraints in Sprints
+                    appContainer.appDatabase.sprintDao().insertDayType(DayType(title = "Public holiday", workingHours = 0.0))
+                    appContainer.appDatabase.sprintDao().insertDayType(DayType(title = "Half day", workingHours = 3.75))
+
                     addTestData(appContainer.appDatabase)
+                    sprintsViewModel.refreshDayTypes()
                 }
             })
 
@@ -117,6 +139,7 @@ private fun SetupModalDrawer(
             onClick = {
                 scope.launch(Dispatchers.IO) {
                     appContainer.appDatabase.clearAllTables()
+                    sprintsViewModel.refreshDayTypes()
                 }
             })
     }
@@ -127,7 +150,8 @@ private fun SetupModalDrawer(
 @Composable
 private fun MainContentScaffold(
     appState: TimeTrackerAppState,
-    appContainer: AppContainer
+    appContainer: AppContainer,
+    sprintsViewModel: SprintsViewModel
 ) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
@@ -152,7 +176,10 @@ private fun MainContentScaffold(
     )
 
     val sprintReportModel: SprintReportModel = viewModel(
-        factory = SprintReportModel.provideFactory(appContainer.taskRepository)
+        factory = SprintReportModel.provideFactory(
+            appContainer.taskRepository,
+            appContainer.appDatabase.sprintDao()
+        )
     )
 
     Scaffold(
@@ -207,7 +234,16 @@ private fun MainContentScaffold(
             )
         }
     ) { paddingValues ->
-        SetupNavHost(appState, paddingValues, appContainer, taskListModel, reportsModel, dayModel, sprintReportModel)
+        SetupNavHost(
+            appState,
+            paddingValues,
+            appContainer,
+            taskListModel,
+            reportsModel,
+            dayModel,
+            sprintReportModel,
+            sprintsViewModel
+        )
 
         if (showFilterModal) {
             val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
@@ -278,7 +314,8 @@ private fun SetupNavHost(
     taskListModel: TaskListModel,
     reportsModel: ReportsModel,
     dayModel: DayModel,
-    sprintReportModel: SprintReportModel
+    sprintReportModel: SprintReportModel,
+    sprintsViewModel: SprintsViewModel
 ) {
     NavHost(
         navController = appState.navController,
@@ -297,6 +334,27 @@ private fun SetupNavHost(
             SprintReportScreen(sprintReportModel) { taskId ->
                 appState.navigateToScreen("${Screens.TASK.name}/$taskId")
             }
+        }
+
+        composable(Screens.SPRINTS.name) {
+            SprintsScreen(
+                viewModel = sprintsViewModel,
+                onAddSprint = {
+                    sprintsViewModel.startCreatingSprint()
+                    appState.navigateToScreen(Screens.SPRINT_EDIT.name)
+                },
+                onEditSprint = { sprint ->
+                    sprintsViewModel.startEditingSprint(sprint)
+                    appState.navigateToScreen(Screens.SPRINT_EDIT.name)
+                }
+            )
+        }
+
+        composable(Screens.SPRINT_EDIT.name) {
+            SprintEditScreen(
+                viewModel = sprintsViewModel,
+                onBack = { appState.navController.popBackStack() }
+            )
         }
 
         composable(Screens.DAY.name) {

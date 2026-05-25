@@ -12,6 +12,8 @@ import java.time.ZoneId
 
 interface TaskRepository {
 
+    val sprintDao: SprintDao
+
     suspend fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries?
     suspend fun getTasks(): List<Task>
 
@@ -85,6 +87,8 @@ interface TaskRepository {
 
 
 class TaskRepositoryImpl(private val appDatabase: AppDatabase) : TaskRepository {
+
+    override val sprintDao: SprintDao = appDatabase.sprintDao()
 
     override suspend fun getTaskWithTimeEntries(taskId: Long): TaskWithTimeEntries? {
         return appDatabase.taskDao().getTaskWithTimeEntries(taskId)

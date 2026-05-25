@@ -2,6 +2,7 @@ package com.kjipo.timetracker
 
 import android.graphics.Color
 import com.kjipo.timetracker.database.AppDatabase
+import com.kjipo.timetracker.database.DayType
 import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.Tag
 import com.kjipo.timetracker.database.TagTasksCrossRef
@@ -39,6 +40,9 @@ fun toTwoDigits(value: Long): String {
 
 
 suspend fun addTestData(appDatabase: AppDatabase) {
+    appDatabase.sprintDao().insertDayType(DayType(title = "Public holiday", workingHours = 0.0))
+    appDatabase.sprintDao().insertDayType(DayType(title = "Half day", workingHours = 3.75))
+
     val project =
         Project(0, "Project 1", Color.valueOf(Color.GREEN)).let { addProject(it, appDatabase); it }
     val project2 =

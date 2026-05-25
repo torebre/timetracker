@@ -56,6 +56,12 @@ class TimeTrackerAppState(
                     route.startsWith(it.name)
                 }
 
+                if (route == Screens.SPRINT_EDIT.name) {
+                    // Do not pop up to start destination when going to edit screen
+                    // so that we can go back to the previous screen
+                    return@navigate
+                }
+
                 launchSingleTop = true
                 // Some screens should load the state again every time the user navigates to them
                 // in case the state they are showing have been affected by changes done in some
@@ -84,6 +90,8 @@ class TimeTrackerAppState(
         return !route.startsWith(Screens.TAG.name)
                 && !route.startsWith(Screens.TASKS.name)
                 && !route.startsWith(Screens.PROJECTS.name)
+                && !route.startsWith(Screens.SPRINTS.name)
+                && !route.startsWith(Screens.SPRINT_EDIT.name)
     }
 
 }

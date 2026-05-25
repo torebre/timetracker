@@ -10,12 +10,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [TimeEntry::class, Task::class, Tag::class,
         TimeEntryTaskCrossRef::class, TagTasksCrossRef::class,
-        TimeEntryDay::class, Project::class],
-    version = 9,
+        TimeEntryDay::class, Project::class,
+        Sprint::class, DayType::class, SprintDay::class, CustomDay::class],
+    version = 11,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 7, to = 8),
-        AutoMigration(from = 8, to = 9)
+        AutoMigration(from = 8, to = 9),
+        AutoMigration(from = 9, to = 10),
+        AutoMigration(from = 10, to = 11)
     ]
 )
 @TypeConverters(Converters::class)
@@ -28,6 +31,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun timeEntryDao(): TimeEntryDao
 
     abstract fun projectDao(): ProjectDao
+
+    abstract fun sprintDao(): SprintDao
 
 }
 

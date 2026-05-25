@@ -14,5 +14,7 @@ enum class Screens {
     PROJECT,
     EXPORT,
     WEEKVIEW,
-    SPRINT_REPORT
+    SPRINT_REPORT,
+    SPRINTS,
+    SPRINT_EDIT
 }
