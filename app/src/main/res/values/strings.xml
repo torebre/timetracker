@@ -1,3 +1,28 @@
 <resources>
     <string name="app_name">Time tracker</string>
+    <string name="tasks">Tasks</string>
+    <string name="reports">Reports</string>
+    <string name="day">Day</string>
+    <string name="task">Task</string>
+    <string name="time_entry_edit">Time entry edit</string>
+    <string name="tags">Tags</string>
+    <string name="tag">Tag</string>
+    <string name="projects">Projects</string>
+    <string name="project">Project</string>
+    <string name="export">Export</string>
+    <string name="weekview">Weekview</string>
+    <string name="sprint_report">Sprint report</string>
+    <string name="sprints">Sprints</string>
+    <string name="sprint_edit">Sprint edit</string>
+    <string name="setup_test_data">Setup test data</string>
+    <string name="clear_database">Clear database</string>
+    <string name="top_bar">Top bar</string>
+    <string name="filter">Filter</string>
+    <string name="sort">Sort</string>
+    <string name="test">Test</string>
+    <string name="recently_used">Recently used</string>
+    <string name="default_sort">Default</string>
+    <string name="apply">Apply</string>
+    <string name="clear_all">Clear All</string>
+    <string name="cancel">Cancel</string>
 </resources>
