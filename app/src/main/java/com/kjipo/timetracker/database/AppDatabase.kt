@@ -34,6 +34,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun sprintDao(): SprintDao
 
+    abstract fun backupDao(): BackupDao
+
 }
 
 val MIGRATION_7_8 = object : Migration(7, 8) {

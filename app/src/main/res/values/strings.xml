@@ -10,6 +10,7 @@
     <string name="projects">Projects</string>
     <string name="project">Project</string>
     <string name="export">Export</string>
+    <string name="backup_export">Backup export</string>
     <string name="weekview">Weekview</string>
     <string name="sprint_report">Sprint report</string>
     <string name="sprints">Sprints</string>
