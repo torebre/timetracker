@@ -104,6 +104,31 @@ private fun SetupModalDrawer(
     sprintsViewModel: SprintsViewModel
 ) {
     val context = LocalContext.current
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    var confirmationDialogTitle by remember { mutableStateOf("") }
+    var confirmationDialogMessage by remember { mutableStateOf("") }
+    var onConfirmAction by remember { mutableStateOf<() -> Unit>({}) }
+
+    if (showConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showConfirmationDialog = false },
+            title = { Text(confirmationDialogTitle) },
+            text = { Text(confirmationDialogMessage) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onConfirmAction()
+                    showConfirmationDialog = false
+                }) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmationDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 
     ModalDrawerSheet {
         drawerItems.forEach { drawerItem ->
@@ -134,16 +159,23 @@ private fun SetupModalDrawer(
         },
             selected = false,
             onClick = {
-                scope.launch(Dispatchers.IO) {
-                    appContainer.appDatabase.clearAllTables()
-                    // Re-insert default day types as clearAllTables() wipes them out
-                    // and they are needed for foreign key constraints in Sprints
-                    appContainer.appDatabase.sprintDao().insertDayType(DayType(title = "Public holiday", workingHours = 0.0))
-                    appContainer.appDatabase.sprintDao().insertDayType(DayType(title = "Half day", workingHours = 3.75))
+                confirmationDialogTitle = context.getString(R.string.confirmation_title)
+                confirmationDialogMessage = context.getString(R.string.setup_test_data_confirmation_message)
+                onConfirmAction = {
+                    scope.launch(Dispatchers.IO) {
+                        appContainer.appDatabase.clearAllTables()
+                        // Re-insert default day types as clearAllTables() wipes them out
+                        // and they are needed for foreign key constraints in Sprints
+                        appContainer.appDatabase.sprintDao()
+                            .insertDayType(DayType(title = "Public holiday", workingHours = 0.0))
+                        appContainer.appDatabase.sprintDao()
+                            .insertDayType(DayType(title = "Half day", workingHours = 3.75))
 
-                    addTestData(appContainer.appDatabase)
-                    sprintsViewModel.refreshDayTypes()
+                        addTestData(appContainer.appDatabase)
+                        sprintsViewModel.refreshDayTypes()
+                    }
                 }
+                showConfirmationDialog = true
             })
 
         NavigationDrawerItem(label = {
@@ -151,10 +183,15 @@ private fun SetupModalDrawer(
         },
             selected = false,
             onClick = {
-                scope.launch(Dispatchers.IO) {
-                    appContainer.appDatabase.clearAllTables()
-                    sprintsViewModel.refreshDayTypes()
+                confirmationDialogTitle = context.getString(R.string.confirmation_title)
+                confirmationDialogMessage = context.getString(R.string.clear_database_confirmation_message)
+                onConfirmAction = {
+                    scope.launch(Dispatchers.IO) {
+                        appContainer.appDatabase.clearAllTables()
+                        sprintsViewModel.refreshDayTypes()
+                    }
                 }
+                showConfirmationDialog = true
             })
     }
 }
