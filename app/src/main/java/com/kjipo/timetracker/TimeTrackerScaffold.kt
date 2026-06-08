@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -207,8 +208,6 @@ private fun MainContentScaffold(
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
-    var showSortMenu by remember { mutableStateOf(false) }
-    var showFilterModal by remember { mutableStateOf(false) }
 
     var showTagSelection by remember { mutableStateOf(false) }
 
@@ -241,27 +240,18 @@ private fun MainContentScaffold(
                     titleContentColor = MaterialTheme.colorScheme.primary
                 ), actions = {
                     if (appState.screenShowing.value == Screens.TASKS) {
-                        Button(onClick = {
-                            showFilterModal = true
-                            // TODO
-
+                        IconButton(onClick = {
+                            showBottomSheet = true
                         }) {
-                            Text(stringResource(R.string.filter))
-                        }
-                        Button(onClick = {
-                            showSortMenu = true
-                        }) {
-                            Text(stringResource(R.string.sort))
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search)
+                            )
                         }
                     } else if (appState.screenShowing.value == Screens.REPORTS) {
                         Button(onClick = {
                             showTagSelection = true
                         }) { Text(stringResource(R.string.tags)) }
-                    }
-                    Button(onClick = {
-                        showBottomSheet = true
-                    }) {
-                        Text(stringResource(R.string.test))
                     }
                 })
         },
@@ -296,60 +286,37 @@ private fun MainContentScaffold(
             sprintsViewModel
         )
 
-        if (showFilterModal) {
-            val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
-            FilterModal(
-                availableFilters = uiState.value.availableFilters,
-                initialSelectedFilters = uiState.value.selectedFilters,
-                initialFilterClosed = uiState.value.filterClosed,
-                onApply = { filters, filterClosed ->
-                    taskListModel.updateFilter(filters, filterClosed)
-                },
-                setShowDialog = { show ->
-                    showFilterModal = show
-                }
-            )
-        }
-
         if (showTagSelection) {
             // TODO
 
         }
 
-        if (showSortMenu) {
-            DropdownMenu(expanded = showSortMenu,
-                onDismissRequest = { showSortMenu = false }) {
-                DropdownMenuItem(text = {
-                    Text(stringResource(R.string.recently_used))
-                },
-                    onClick = {
-                        taskListModel.setSortOrder(SortOrder.RECENTLY_USED)
-                        showSortMenu = false
-                    })
-                DropdownMenuItem(text = {
-                    Text(stringResource(R.string.default_sort))
-                },
-                    onClick = {
-                        taskListModel.setSortOrder(SortOrder.DEFAULT)
-                        showSortMenu = false
-                    })
-            }
-        }
-
         if (showBottomSheet) {
+            val uiState = taskListModel.uiState.collectAsStateWithLifecycle()
+
             ModalBottomSheet(onDismissRequest = {
                 showBottomSheet = false
             }, sheetState = sheetState) {
-                Button(onClick = {
-                    scope.launch { sheetState.hide() }.invokeOnCompletion {
-                        if (!sheetState.isVisible) {
-                            showBottomSheet = false
+                TaskListBottomSheetContent(
+                    availableFilters = uiState.value.availableFilters,
+                    initialSelectedFilters = uiState.value.selectedFilters,
+                    initialFilterClosed = uiState.value.filterClosed,
+                    searchQuery = uiState.value.searchQuery,
+                    onApplyFilter = { filters, filterClosed ->
+                        taskListModel.updateFilter(filters, filterClosed)
+                    },
+                    onSetSortOrder = { sortOrder ->
+                        taskListModel.setSortOrder(sortOrder)
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) {
+                                showBottomSheet = false
+                            }
                         }
-
+                    },
+                    onUpdateSearchQuery = { query ->
+                        taskListModel.updateSearchQuery(query)
                     }
-                }) {
-                    Text("Hide bottom sheet")
-                }
+                )
             }
         }
     }
@@ -716,115 +683,166 @@ fun FloatingAddButton(contentDescription: String, onClickHandler: () -> Unit) {
 
 
 @Composable
-fun FilterModal(
+fun TaskListBottomSheetContent(
     availableFilters: List<TaskMarkUiElement>,
     initialSelectedFilters: List<TaskMarkUiElement>,
     initialFilterClosed: Boolean,
-    onApply: (List<TaskMarkUiElement>, Boolean) -> Unit,
-    setShowDialog: (Boolean) -> Unit,
+    searchQuery: String,
+    onApplyFilter: (List<TaskMarkUiElement>, Boolean) -> Unit,
+    onSetSortOrder: (SortOrder) -> Unit,
+    onUpdateSearchQuery: (String) -> Unit
+) {
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf(
+        stringResource(R.string.filter),
+        stringResource(R.string.sort),
+        stringResource(R.string.search)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .heightIn(min = 300.dp, max = 500.dp)
+    ) {
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        when (selectedTabIndex) {
+            0 -> FilterTabContent(
+                availableFilters,
+                initialSelectedFilters,
+                initialFilterClosed,
+                onApplyFilter
+            )
+
+            1 -> SortTabContent(onSetSortOrder)
+            2 -> SearchTabContent(searchQuery, onUpdateSearchQuery)
+        }
+    }
+}
+
+@Composable
+private fun FilterTabContent(
+    availableFilters: List<TaskMarkUiElement>,
+    initialSelectedFilters: List<TaskMarkUiElement>,
+    initialFilterClosed: Boolean,
+    onApply: (List<TaskMarkUiElement>, Boolean) -> Unit
 ) {
     var selectedFilters by remember { mutableStateOf(initialSelectedFilters) }
     var filterClosed by remember { mutableStateOf(initialFilterClosed) }
 
-    Dialog(onDismissRequest = { setShowDialog(false) }) {
-        Card(
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
+                .clickable {
+                    filterClosed = !filterClosed
+                    onApply(selectedFilters, filterClosed)
+                }
+                .padding(vertical = 8.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Filter by Tags/Projects",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+            Checkbox(
+                checked = filterClosed,
+                onCheckedChange = { checked ->
+                    filterClosed = checked
+                    onApply(selectedFilters, filterClosed)
+                }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Filter out closed tasks")
+        }
 
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+        ) {
+            items(availableFilters.size) { filter ->
+                val currentFilter = availableFilters[filter]
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            filterClosed = !filterClosed
+                            selectedFilters = if (selectedFilters.contains(currentFilter)) {
+                                selectedFilters - currentFilter
+                            } else {
+                                selectedFilters + currentFilter
+                            }
+                            onApply(selectedFilters, filterClosed)
                         }
                         .padding(vertical = 8.dp)
                 ) {
                     Checkbox(
-                        checked = filterClosed,
+                        checked = selectedFilters.contains(currentFilter),
                         onCheckedChange = { checked ->
-                            filterClosed = checked
+                            selectedFilters = if (checked) {
+                                selectedFilters + currentFilter
+                            } else {
+                                selectedFilters - currentFilter
+                            }
+                            onApply(selectedFilters, filterClosed)
                         }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Filter out closed tasks")
-                }
-
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .heightIn(max = 300.dp)
-                ) {
-                    items(availableFilters.size) { filter ->
-                        val currentFilter = availableFilters[filter]
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedFilters = if (selectedFilters.contains(currentFilter)) {
-                                        selectedFilters - currentFilter
-                                    } else {
-                                        selectedFilters + currentFilter
-                                    }
-                                }
-                                .padding(vertical = 8.dp)
-                        ) {
-                            Checkbox(
-                                checked = selectedFilters.contains(currentFilter),
-                                onCheckedChange = { checked ->
-                                    selectedFilters = if (checked) {
-                                        selectedFilters + currentFilter
-                                    } else {
-                                        selectedFilters - currentFilter
-                                    }
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(currentFilter.title)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = { selectedFilters = emptyList() }) {
-                        Text(stringResource(R.string.clear_all))
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(onClick = { setShowDialog(false) }) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = {
-                        onApply(selectedFilters, filterClosed)
-                        setShowDialog(false)
-                    }) {
-                        Text(stringResource(R.string.apply))
-                    }
+                    Text(currentFilter.title)
                 }
             }
         }
-    }
 
+        TextButton(
+            onClick = {
+                selectedFilters = emptyList()
+                onApply(selectedFilters, filterClosed)
+            },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text(stringResource(R.string.clear_all))
+        }
+    }
+}
+
+@Composable
+private fun SortTabContent(onSetSortOrder: (SortOrder) -> Unit) {
+    Column {
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.recently_used)) },
+            modifier = Modifier.clickable { onSetSortOrder(SortOrder.RECENTLY_USED) }
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.default_sort)) },
+            modifier = Modifier.clickable { onSetSortOrder(SortOrder.DEFAULT) }
+        )
+    }
+}
+
+@Composable
+private fun SearchTabContent(
+    searchQuery: String,
+    onUpdateSearchQuery: (String) -> Unit
+) {
+    Column {
+        TextField(
+            value = searchQuery,
+            onValueChange = onUpdateSearchQuery,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(stringResource(R.string.search)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true
+        )
+    }
 }
 
 @Composable

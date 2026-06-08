@@ -26,6 +26,7 @@
     <string name="apply">Apply</string>
     <string name="clear_all">Clear All</string>
     <string name="cancel">Cancel</string>
+    <string name="search">Search</string>
     <string name="confirm">Confirm</string>
     <string name="confirmation_title">Confirmation</string>
     <string name="clear_database_confirmation_message">Are you sure you want to clear the database? All data will be lost.</string>

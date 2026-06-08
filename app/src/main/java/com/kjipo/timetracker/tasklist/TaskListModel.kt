@@ -90,6 +90,15 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
         }
     }
 
+    fun updateSearchQuery(searchQuery: String) {
+        viewModelState.update {
+            it.copy(searchQuery = searchQuery)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            reloadTasks()
+        }
+    }
+
 
     private fun refreshOngoingTasks(tasks: List<TaskUi>): List<TaskUi> {
         return tasks.map {
@@ -125,6 +134,12 @@ class TaskListModel(private val taskRepository: TaskRepository) : ViewModel() {
 
         if (viewModelState.value.filterClosed) {
             filteredTasks = filteredTasks.filter { !it.closed }
+        }
+
+        if (viewModelState.value.searchQuery.isNotEmpty()) {
+            filteredTasks = filteredTasks.filter {
+                it.title.contains(viewModelState.value.searchQuery, ignoreCase = true)
+            }
         }
 
         viewModelState.update {

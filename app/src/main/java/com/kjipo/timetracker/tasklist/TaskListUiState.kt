@@ -8,5 +8,6 @@ data class TaskListUiState(
     val tasks: List<TaskUi> = emptyList(),
     val availableFilters: List<TaskMarkUiElement> = emptyList(),
     val selectedFilters: List<TaskMarkUiElement> = emptyList(),
-    val filterClosed: Boolean = false
+    val filterClosed: Boolean = false,
+    val searchQuery: String = ""
 )
