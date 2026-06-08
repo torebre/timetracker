@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,17 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kjipo.timetracker.database.TimeEntry
 import com.kjipo.timetracker.formatDuration
 import com.kjipo.timetracker.tagscreen.TaskMarkUiElement
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import kotlin.random.Random
 
 
 class TaskListInputParameters(
@@ -45,61 +37,7 @@ class TaskListInputParameters(
 )
 
 
-private fun getPreviewTasks(): List<TaskUi> {
-    val random = Random(1)
 
-    return (1L until 15).map { id ->
-        val timeEntries = getRandomTimeEntries(random.nextInt(3))
-        val projectId = random.nextLong(10)
-
-        TaskUi(
-            id,
-            "Task $id aaaaaaa bbbbbbbb ccccccccccc",
-            timeEntries,
-            Duration.ofSeconds(
-                timeEntries.map { it.getDuration() }.filterNotNull().sumOf { it.seconds }),
-            getRandomTags(random.nextInt(4)),
-            TaskMarkUiElement(
-                projectId,
-                "Project $projectId",
-                Color.hsl(random.nextInt(360).toFloat(), 1f, 0.5f)
-            )
-        )
-    }
-}
-
-private fun getRandomTimeEntries(numberOfTimeEntries: Int): List<TimeEntry> {
-    val random = Random(1)
-    var timeCounter = LocalDateTime.of(2020, 2, 3, 17, 0, 0).toEpochSecond(ZoneOffset.UTC)
-    val timeEntries = mutableListOf<TimeEntry>()
-
-    for (i in 0 until numberOfTimeEntries) {
-        val durationInSeconds = random.nextInt(500, 10000)
-
-        timeEntries.add(
-            TimeEntry(
-                1, 1,
-                Instant.ofEpochSecond(timeCounter),
-                Instant.ofEpochSecond(timeCounter + durationInSeconds)
-            )
-        )
-
-        timeCounter += durationInSeconds + random.nextInt(3600, 20000)
-    }
-
-    return timeEntries
-}
-
-private fun getRandomTags(numberOfTags: Int): MutableList<TaskMarkUiElement> {
-    val random = Random(1)
-    val tags = mutableListOf<TaskMarkUiElement>()
-
-    for (i in 0L until numberOfTags) {
-        tags.add(TaskMarkUiElement(i, "Tag $i", Color.hsl(random.nextInt(360).toFloat(), 1f, 0.5f)))
-    }
-
-    return tags
-}
 
 
 @Composable
@@ -288,16 +226,4 @@ fun Tag(title: String, colour: Color?, modifier: Modifier) {
     Badge(modifier = modifier, containerColor = colour ?: Color.White) {
         Text(title)
     }
-}
-
-
-@Preview(showBackground = true)
-@Composable
-private fun ShowPreview() {
-    val previewTasks = getPreviewTasks()
-    TaskList(TaskListInputParameters(TaskListUiState(tasks = previewTasks), {
-
-    }, {
-
-    }))
 }
