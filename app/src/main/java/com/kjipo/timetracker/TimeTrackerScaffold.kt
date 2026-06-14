@@ -57,6 +57,7 @@ import com.kjipo.timetracker.day.DayModel
 import com.kjipo.timetracker.day.DayScreen
 import com.kjipo.timetracker.weekview.WeekViewScreen
 import com.kjipo.timetracker.backup.BackupExportScreen
+import com.kjipo.timetracker.backup.BackupRestoreScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,7 +73,16 @@ fun TimeTrackerScaffold(
         factory = SprintsViewModel.provideFactory(appContainer.taskRepository)
     )
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val drawerItems = listOf(Screens.PROJECTS, Screens.TAGS, Screens.REPORTS, Screens.SPRINT_REPORT, Screens.SPRINTS, Screens.EXPORT, Screens.BACKUP_EXPORT)
+    val drawerItems = listOf(
+        Screens.PROJECTS,
+        Screens.TAGS,
+        Screens.REPORTS,
+        Screens.SPRINT_REPORT,
+        Screens.SPRINTS,
+        Screens.EXPORT,
+        Screens.BACKUP_EXPORT,
+        Screens.BACKUP_RESTORE
+    )
     val scope = rememberCoroutineScope()
     val selectedItem = remember { mutableStateOf(drawerItems[0]) }
 
@@ -445,6 +455,12 @@ private fun SetupNavHost(
 
         composable(Screens.BACKUP_EXPORT.name) {
             BackupExportScreen(appContainer.appDatabase)
+        }
+
+        composable(Screens.BACKUP_RESTORE.name) {
+            BackupRestoreScreen(appContainer.appDatabase) {
+                appState.navigateToScreen(Screens.TASKS.name)
+            }
         }
     }
 }

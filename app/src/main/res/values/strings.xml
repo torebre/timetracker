@@ -31,4 +31,15 @@
     <string name="confirmation_title">Confirmation</string>
     <string name="clear_database_confirmation_message">Are you sure you want to clear the database? All data will be lost.</string>
     <string name="setup_test_data_confirmation_message">Are you sure you want to setup test data? This will clear all existing data.</string>
+    <string name="backup_restore">Restore</string>
+    <string name="restore_backup_title">Restore backup</string>
+    <string name="restore_backup_description">Restore application data from a backup ZIP file.</string>
+    <string name="select_backup_file">Select backup file</string>
+    <string name="restore_confirmation_title">Replace current data?</string>
+    <string name="restore_confirmation_message">Restoring this backup will replace all current application data. This cannot be undone. Do you want to continue?</string>
+    <string name="restore">Restore</string>
+    <string name="restoring">Restoring...</string>
+    <string name="restore_success">Backup restored successfully.</string>
+    <string name="restore_error">Restore failed: %1$s</string>
+    <string name="go_to_tasks">Go to tasks</string>
 </resources>
