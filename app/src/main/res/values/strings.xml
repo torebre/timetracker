@@ -12,7 +12,9 @@
     <string name="export">Export</string>
     <string name="backup_export">Backup export</string>
     <string name="weekview">Weekview</string>
+    <string name="week_overview">Week overview</string>
     <string name="sprint_report">Sprint report</string>
+    <string name="project_report">Project report</string>
     <string name="sprints">Sprints</string>
     <string name="sprint_edit">Sprint edit</string>
     <string name="setup_test_data">Setup test data</string>

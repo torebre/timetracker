@@ -52,6 +52,14 @@ class DayModel(private val taskRepository: TaskRepository) : ViewModel() {
         DayUiState(LocalDate.now(), emptyList(), emptyList())
     )
 
+    fun goToPreviousDay() {
+        selectedDate.value = selectedDate.value.minusDays(1)
+    }
+
+    fun goToNextDay() {
+        selectedDate.value = selectedDate.value.plusDays(1)
+    }
+
     fun addTimeEntry(taskId: Long, start: Instant, stop: Instant?) {
         viewModelScope.launch {
             taskRepository.addTimeEntry(TimeEntry(taskId = taskId, start = start, stop = stop))

@@ -1,6 +1,7 @@
 package com.kjipo.timetracker.weekview
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.kjipo.timetracker.database.Project
 import com.kjipo.timetracker.database.Tag
@@ -211,6 +212,14 @@ class WeekViewModel(private val taskRepository: TaskRepository) : ViewModel() {
     }
 
     companion object {
+
+        fun provideFactory(taskRepository: TaskRepository): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return WeekViewModel(taskRepository) as T
+                }
+            }
 
         internal fun generateDaysFromStartOfWeekUntilToday(day: LocalDate = LocalDate.now()): List<LocalDate> {
             return (0 until day.dayOfWeek.value).map {

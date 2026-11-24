@@ -17,6 +17,8 @@ enum class Screens {
     BACKUP_RESTORE,
     WEEKVIEW,
     SPRINT_REPORT,
+    PROJECT_REPORT,
+    WEEK_OVERVIEW,
     SPRINTS,
     SPRINT_EDIT
 }

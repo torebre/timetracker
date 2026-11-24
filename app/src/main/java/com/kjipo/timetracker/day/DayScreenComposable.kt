@@ -13,10 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,8 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kjipo.timetracker.database.Task
-import com.kjipo.timetracker.database.TaskWithTimeEntries
-import timber.log.Timber
+import com.kjipo.timetracker.dateFormatter
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -74,11 +72,29 @@ fun DayScreen(dayModel: DayModel, onTaskClick: (Long) -> Unit) {
     val totalHeight = hourHeightDp * (endHour - startHour)
     val density = LocalDensity.current
 
-    Box(
-        contentAlignment = Alignment.TopStart,
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(isSelectionMode, totalHeight) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(onClick = { dayModel.goToPreviousDay() }) { Text("<") }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = dateFormatter.format(uiState.date),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = 5.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Button(onClick = { dayModel.goToNextDay() }) { Text(">") }
+        }
+
+        Box(
+            contentAlignment = Alignment.TopStart,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .pointerInput(isSelectionMode, totalHeight) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     // Handle zoom (pinch gesture)
                     if (zoom != 1f) {
@@ -289,6 +305,7 @@ fun DayScreen(dayModel: DayModel, onTaskClick: (Long) -> Unit) {
             )
         }
     }
+    } // end Column
 }
 
 @Composable

@@ -76,8 +76,14 @@ class SprintsViewModel(private val repository: TaskRepository) : ViewModel() {
     }
 
     fun updateDraftSprint(title: String, startDate: LocalDate, endDate: LocalDate) {
-        _uiState.update { 
-            it.copy(draftSprint = it.draftSprint?.copy(title = title, startDate = startDate, endDate = endDate))
+        val maxEndDate = startDate.plusWeeks(4)
+        val effectiveEndDate = when {
+            endDate.isAfter(maxEndDate) -> maxEndDate
+            endDate.isBefore(startDate) -> startDate
+            else -> endDate
+        }
+        _uiState.update {
+            it.copy(draftSprint = it.draftSprint?.copy(title = title, startDate = startDate, endDate = effectiveEndDate))
         }
     }
 

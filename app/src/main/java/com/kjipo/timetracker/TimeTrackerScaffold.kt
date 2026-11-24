@@ -31,6 +31,8 @@ import androidx.navigation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.kjipo.timetracker.export.ExportScreen
+import com.kjipo.timetracker.reports.ProjectReportModel
+import com.kjipo.timetracker.reports.ProjectReportScreen
 import com.kjipo.timetracker.reports.ReportScreen
 import com.kjipo.timetracker.reports.ReportsModel
 import com.kjipo.timetracker.reports.SprintReportModel
@@ -51,6 +53,8 @@ import com.kjipo.timetracker.taskscreen.TaskScreen
 import com.kjipo.timetracker.taskscreen.TaskScreenModel
 import com.kjipo.timetracker.timeentryscreen.TimeEntryEditUiState
 import com.kjipo.timetracker.timeentryscreen.TimeEntryScreen
+import com.kjipo.timetracker.weekoverview.WeekOverviewScreen
+import com.kjipo.timetracker.weekoverview.WeekOverviewViewModel
 import com.kjipo.timetracker.weekview.WeekViewModel
 import com.kjipo.timetracker.database.DayType
 import com.kjipo.timetracker.day.DayModel
@@ -78,6 +82,8 @@ fun TimeTrackerScaffold(
         Screens.TAGS,
         Screens.REPORTS,
         Screens.SPRINT_REPORT,
+        Screens.PROJECT_REPORT,
+        Screens.WEEK_OVERVIEW,
         Screens.SPRINTS,
         Screens.EXPORT,
         Screens.BACKUP_EXPORT,
@@ -242,6 +248,18 @@ private fun MainContentScaffold(
         )
     )
 
+    val projectReportModel: ProjectReportModel = viewModel(
+        factory = ProjectReportModel.provideFactory(appContainer.taskRepository)
+    )
+
+    val weekViewModel: WeekViewModel = viewModel(
+        factory = WeekViewModel.provideFactory(appContainer.taskRepository)
+    )
+
+    val weekOverviewViewModel: WeekOverviewViewModel = viewModel(
+        factory = WeekOverviewViewModel.provideFactory(appContainer.taskRepository)
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.top_bar)) },
@@ -293,7 +311,10 @@ private fun MainContentScaffold(
             reportsModel,
             dayModel,
             sprintReportModel,
-            sprintsViewModel
+            projectReportModel,
+            sprintsViewModel,
+            weekViewModel,
+            weekOverviewViewModel
         )
 
         if (showTagSelection) {
@@ -342,7 +363,10 @@ private fun SetupNavHost(
     reportsModel: ReportsModel,
     dayModel: DayModel,
     sprintReportModel: SprintReportModel,
-    sprintsViewModel: SprintsViewModel
+    projectReportModel: ProjectReportModel,
+    sprintsViewModel: SprintsViewModel,
+    weekViewModel: WeekViewModel,
+    weekOverviewViewModel: WeekOverviewViewModel
 ) {
     NavHost(
         navController = appState.navController,
@@ -361,6 +385,10 @@ private fun SetupNavHost(
             SprintReportScreen(sprintReportModel) { taskId ->
                 appState.navigateToScreen("${Screens.TASK.name}/$taskId")
             }
+        }
+
+        composable(Screens.PROJECT_REPORT.name) {
+            ProjectReportScreen(projectReportModel)
         }
 
         composable(Screens.SPRINTS.name) {
@@ -391,8 +419,11 @@ private fun SetupNavHost(
         }
 
         composable(Screens.WEEKVIEW.name) {
-            val weekViewModel = WeekViewModel(appContainer.taskRepository)
             WeekViewScreen(weekViewModel)
+        }
+
+        composable(Screens.WEEK_OVERVIEW.name) {
+            WeekOverviewScreen(weekOverviewViewModel)
         }
 
         composable(

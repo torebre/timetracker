@@ -23,6 +23,7 @@ import androidx.compose.ui.window.Dialog
 import com.kjipo.timetracker.database.DayType
 import com.kjipo.timetracker.dateFormatter
 import java.time.Instant
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -221,50 +222,138 @@ fun SprintCalendar(
     dayTypes: List<DayType>,
     onDayClick: (LocalDate) -> Unit
 ) {
-    val days = remember(startDate, endDate) {
-        val list = mutableListOf<LocalDate>()
-        if (startDate.isBefore(endDate) || startDate.isEqual(endDate)) {
+    val dayHeaderLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+    val gridItems: List<CalendarGridItem> = remember(startDate, endDate) {
+        val items = mutableListOf<CalendarGridItem>()
+        dayHeaderLabels.forEach { items.add(CalendarGridItem.DayHeader(it)) }
+
+        if (!startDate.isAfter(endDate)) {
+            val startPadding = startDate.dayOfWeek.value - 1
+            repeat(startPadding) { i ->
+                items.add(CalendarGridItem.OutsideDay(startDate.minusDays((startPadding - i).toLong())))
+            }
+
             var current = startDate
             while (!current.isAfter(endDate)) {
-                list.add(current)
+                items.add(CalendarGridItem.SprintDay(current))
                 current = current.plusDays(1)
             }
+
+            val endPadding = (7 - endDate.dayOfWeek.value) % 7
+            repeat(endPadding) { i ->
+                items.add(CalendarGridItem.OutsideDay(endDate.plusDays((i + 1).toLong())))
+            }
         }
-        list
+
+        items
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 80.dp),
+        columns = GridCells.Fixed(7),
         contentPadding = PaddingValues(4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        items(days) { date ->
-            val isSpecial = sprintDays.containsKey(date) || customDays.containsKey(date)
-            val backgroundColor = if (isSpecial) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-            val borderColor = if (isSpecial) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
-
-            Card(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .clickable { onDayClick(date) },
-                colors = CardDefaults.cardColors(containerColor = backgroundColor),
-                border = BorderStroke(1.dp, borderColor)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(text = date.dayOfMonth.toString(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                    Text(text = date.month.name.take(3), style = MaterialTheme.typography.labelSmall)
-                    if (isSpecial) {
-                        val hours = if (customDays.containsKey(date)) {
-                            customDays[date]
-                        } else {
-                            dayTypes.find { it.dayTypeId == sprintDays[date] }?.workingHours
+        items(gridItems, key = { item ->
+            when (item) {
+                is CalendarGridItem.DayHeader -> "header_${item.label}"
+                is CalendarGridItem.OutsideDay -> "outside_${item.date}"
+                is CalendarGridItem.SprintDay -> "sprint_${item.date}"
+            }
+        }) { item ->
+            when (item) {
+                is CalendarGridItem.DayHeader -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (item.label == "Sun") Color.Red
+                                    else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+                is CalendarGridItem.OutsideDay -> {
+                    Card(
+                        modifier = Modifier.aspectRatio(1f),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = item.date.dayOfMonth.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
+                            )
                         }
-                        Text(text = "${hours}h", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                is CalendarGridItem.SprintDay -> {
+                    val date = item.date
+                    val isSunday = date.dayOfWeek == DayOfWeek.SUNDAY
+                    val isWeekend = date.dayOfWeek == DayOfWeek.SATURDAY || isSunday
+                    val isSpecial = sprintDays.containsKey(date) || customDays.containsKey(date)
+
+                    val backgroundColor = when {
+                        isSpecial -> MaterialTheme.colorScheme.primaryContainer
+                        isWeekend -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> MaterialTheme.colorScheme.surface
+                    }
+                    val borderColor = if (isSpecial) MaterialTheme.colorScheme.primary
+                                      else MaterialTheme.colorScheme.outlineVariant
+
+                    val hoursToShow: Double? = when {
+                        customDays.containsKey(date) -> customDays[date]
+                        sprintDays.containsKey(date) -> dayTypes.find { it.dayTypeId == sprintDays[date] }?.workingHours
+                        isWeekend -> 0.0
+                        else -> null
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .clickable { onDayClick(date) },
+                        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+                        border = BorderStroke(1.dp, borderColor)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(2.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = date.dayOfMonth.toString(),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSunday) Color.Red
+                                        else MaterialTheme.colorScheme.onSurface
+                            )
+                            if (hoursToShow != null) {
+                                val hoursStr = if (hoursToShow == hoursToShow.toLong().toDouble())
+                                    "${hoursToShow.toLong()}h"
+                                else
+                                    "${hoursToShow}h"
+                                Text(
+                                    text = hoursStr,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isSpecial) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -346,4 +435,10 @@ fun DayConfigModal(
             }
         }
     }
+}
+
+private sealed class CalendarGridItem {
+    data class DayHeader(val label: String) : CalendarGridItem()
+    data class OutsideDay(val date: LocalDate) : CalendarGridItem()
+    data class SprintDay(val date: LocalDate) : CalendarGridItem()
 }
